@@ -1,0 +1,13 @@
+# Python & Environment
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.env
+
+# Uploads & User data (retain structure)
+uploads/photos/original/*
+!uploads/photos/original/.gitkeep
+uploads/photos/public/*
+!uploads/photos/public/.gitkeep

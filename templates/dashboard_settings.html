@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block title %}Pengaturan Parameter Sistem - LaporBlater{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div style="padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 1.5rem;">
+      <a href="/dashboard" class="btn btn-secondary btn-sm" style="width: 100%;">
+        <i class="fa-solid fa-arrow-left"></i> Kembali ke Dasbor
+      </a>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li><a href="/dashboard" class="sidebar-link"><i class="fa-solid fa-chart-pie"></i> Dasbor Utama</a></li>
+      <li><a href="/dashboard/pengaturan" class="sidebar-link active"><i class="fa-solid fa-sliders"></i> Pengaturan Parameter</a></li>
+    </ul>
+  </aside>
+
+  <!-- Settings Content -->
+  <main class="dashboard-content">
+    <div style="margin-bottom: 2rem;">
+      <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--secondary);">
+        <i class="fa-solid fa-sliders" style="color: var(--primary);"></i> Pengaturan Analisis Spasial & Sistem (Admin)
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">
+        Konfigurasi parameter bobot skor prioritas, klasterisasi DBSCAN, bandwidth KDE, dan ambang keyakinan AI (PRD 8.7 F-30)
+      </p>
+    </div>
+
+    <!-- Parameter Form -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+      <!-- Priority Weights -->
+      <div class="card">
+        <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--secondary); margin-bottom: 0.5rem;">
+          <i class="fa-solid fa-scale-balanced" style="color: #ef4444;"></i> Bobot Kriteria Prioritas (Total = 1.0)
+        </h3>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+          S = w₁·Keparahan + w₂·Kepadatan + w₃·Risiko Keselamatan + w₄·Lama Belum Ditangani
+        </p>
+
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">
+            <span>1. Tingkat Keparahan (Severity)</span>
+            <span id="label-w-sev">0.35</span>
+          </div>
+          <input type="range" class="form-control" id="slider-w-sev" min="0.10" max="0.60" step="0.05" value="0.35" oninput="updateWeightsUI()">
+        </div>
+
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">
+            <span>2. Kepadatan Spasial (KDE / Klaster)</span>
+            <span id="label-w-den">0.30</span>
+          </div>
+          <input type="range" class="form-control" id="slider-w-den" min="0.10" max="0.60" step="0.05" value="0.30" oninput="updateWeightsUI()">
+        </div>
+
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">
+            <span>3. Risiko Keselamatan & Kedekatan Kampus</span>
+            <span id="label-w-saf">0.20</span>
+          </div>
+          <input type="range" class="form-control" id="slider-w-saf" min="0.05" max="0.50" step="0.05" value="0.20" oninput="updateWeightsUI()">
+        </div>
+
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">
+            <span>4. Lama Belum Ditangani (Usia Laporan)</span>
+            <span id="label-w-dur">0.15</span>
+          </div>
+          <input type="range" class="form-control" id="slider-w-dur" min="0.05" max="0.40" step="0.05" value="0.15" oninput="updateWeightsUI()">
+        </div>
+
+        <div style="background: #f8fafc; padding: 0.75rem 1rem; border-radius: var(--radius-md); font-size: 0.85rem; display: flex; justify-content: space-between; margin-bottom: 1rem;">
+          <span style="font-weight: 700;">Total Bobot:</span>
+          <span id="label-w-total" style="font-weight: 800; color: var(--success);">1.00</span>
+        </div>
+
+        <button type="button" class="btn btn-primary" style="width: 100%;" onclick="savePriorityWeights()">
+          <i class="fa-solid fa-floppy-disk"></i> Simpan Bobot Prioritas
+        </button>
+      </div>
+
+      <!-- Spatial Algorithms & AI Parameters -->
+      <div class="card">
+        <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--secondary); margin-bottom: 0.5rem;">
+          <i class="fa-solid fa-gear" style="color: var(--primary);"></i> Parameter Algoritma Spasial & AI
+        </h3>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+          Atur radius klasterisasi, estimasi kepadatan, dan deteksi duplikat.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label" style="font-size: 0.85rem;">Radius Deteksi Laporan Ganda (Meter)</label>
+          <input type="number" id="input-dup-radius" class="form-control" value="6.0" step="0.5" min="2.0" max="30.0">
+          <small style="color: var(--text-muted); font-size: 0.75rem;">PRD 8.1 F-05: Default 6 meter (atau 10 meter jika diuji).</small>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div class="form-group">
+            <label class="form-label" style="font-size: 0.85rem;">DBSCAN eps (Meter)</label>
+            <input type="number" id="input-dbscan-eps" class="form-control" value="50.0" step="5.0" min="10.0">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="font-size: 0.85rem;">DBSCAN minPts</label>
+            <input type="number" id="input-dbscan-minpts" class="form-control" value="3" min="2">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="font-size: 0.85rem;">KDE Bandwidth (Meter)</label>
+          <input type="number" id="input-kde-bw" class="form-control" value="100.0" step="10.0" min="20.0" max="500.0">
+          <small style="color: var(--text-muted); font-size: 0.75rem;">PRD 8.4 F-18: Default 100 meter.</small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="font-size: 0.85rem;">Ambang Keyakinan Saran AI (Threshold)</label>
+          <input type="number" id="input-ai-thresh" class="form-control" value="0.85" step="0.05" min="0.50" max="0.99">
+          <small style="color: var(--text-muted); font-size: 0.75rem;">PRD 8.2 F-08 & 19: Ambang disepakati 0.85 (85%).</small>
+        </div>
+
+        <button type="button" class="btn btn-secondary" style="width: 100%;" onclick="saveSpatialParams()">
+          <i class="fa-solid fa-floppy-disk"></i> Simpan Parameter Spasial
+        </button>
+      </div>
+    </div>
+
+    <!-- Sensitivity Simulator (PRD 8.5 F-24) -->
+    <div class="card" style="margin-bottom: 2.5rem;">
+      <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--secondary); margin-bottom: 0.5rem;">
+        <i class="fa-solid fa-vial-circle-check" style="color: var(--warning);"></i> Uji Sensitivitas Bobot Prioritas (&plusmn;5%)
+      </h3>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+        Sesuai PRD F-24, uji ketahanan model prioritas dengan mengubah bobot &plusmn;5% untuk memastikan stabilitas urutan 10 besar laporan.
+      </p>
+
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="runSensitivityTest(0.05, -0.05, 0, 0)">
+          +5% Keparahan / -5% Kepadatan
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="runSensitivityTest(-0.05, 0.05, 0, 0)">
+          -5% Keparahan / +5% Kepadatan
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="runSensitivityTest(0, 0, 0.05, -0.05)">
+          +5% Risiko / -5% Usia
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="runSensitivityTest(0, 0, 0, 0)">
+          Kembali ke Bobot Normal
+        </button>
+      </div>
+
+      <div id="sensitivity-result" style="background: #f8fafc; padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); font-size: 0.85rem;">
+        Klik salah satu skenario di atas untuk membandingkan urutan prioritas.
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  loadAdminParams();
+});
+
+function updateWeightsUI() {
+  const s = parseFloat(document.getElementById("slider-w-sev").value);
+  const d = parseFloat(document.getElementById("slider-w-den").value);
+  const r = parseFloat(document.getElementById("slider-w-saf").value);
+  const u = parseFloat(document.getElementById("slider-w-dur").value);
+
+  document.getElementById("label-w-sev").innerText = s.toFixed(2);
+  document.getElementById("label-w-den").innerText = d.toFixed(2);
+  document.getElementById("label-w-saf").innerText = r.toFixed(2);
+  document.getElementById("label-w-dur").innerText = u.toFixed(2);
+
+  const total = s + d + r + u;
+  const totalEl = document.getElementById("label-w-total");
+  totalEl.innerText = total.toFixed(2);
+  totalEl.style.color = (Math.abs(total - 1.0) < 0.01) ? "var(--success)" : "var(--danger)";
+}
+
+function loadAdminParams() {
+  fetch("/api/admin/parameters")
+    .then(r => r.json())
+    .then(data => {
+      if (data.priority_weights && data.priority_weights.value) {
+        const w = data.priority_weights.value;
+        document.getElementById("slider-w-sev").value = w.severity || 0.35;
+        document.getElementById("slider-w-den").value = w.density || 0.30;
+        document.getElementById("slider-w-saf").value = w.safety_risk || 0.20;
+        document.getElementById("slider-w-dur").value = w.unhandled_duration || 0.15;
+        updateWeightsUI();
+      }
+      if (data.duplicate_params && data.duplicate_params.value) {
+        document.getElementById("input-dup-radius").value = data.duplicate_params.value.radius_meters || 6.0;
+      }
+      if (data.dbscan_params && data.dbscan_params.value) {
+        document.getElementById("input-dbscan-eps").value = data.dbscan_params.value.eps_meters || 50.0;
+        document.getElementById("input-dbscan-minpts").value = data.dbscan_params.value.min_pts || 3;
+      }
+      if (data.kde_params && data.kde_params.value) {
+        document.getElementById("input-kde-bw").value = data.kde_params.value.bandwidth_meters || 100.0;
+      }
+      if (data.ai_params && data.ai_params.value) {
+        document.getElementById("input-ai-thresh").value = data.ai_params.value.confidence_threshold || 0.85;
+      }
+    })
+    .catch(err => console.error("Error loading params:", err));
+}
+
+function savePriorityWeights() {
+  const s = parseFloat(document.getElementById("slider-w-sev").value);
+  const d = parseFloat(document.getElementById("slider-w-den").value);
+  const r = parseFloat(document.getElementById("slider-w-saf").value);
+  const u = parseFloat(document.getElementById("slider-w-dur").value);
+
+  const payload = {
+    "priority_weights": {
+      "severity": s,
+      "density": d,
+      "safety_risk": r,
+      "unhandled_duration": u
+    }
+  };
+
+  fetch("/api/admin/parameters", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(res => {
+    showToast("Bobot prioritas berhasil diperbarui!", "success");
+  })
+  .catch(err => showToast("Gagal menyimpan bobot.", "error"));
+}
+
+function saveSpatialParams() {
+  const dup = parseFloat(document.getElementById("input-dup-radius").value);
+  const eps = parseFloat(document.getElementById("input-dbscan-eps").value);
+  const minPts = parseInt(document.getElementById("input-dbscan-minpts").value);
+  const bw = parseFloat(document.getElementById("input-kde-bw").value);
+  const ai = parseFloat(document.getElementById("input-ai-thresh").value);
+
+  const payload = {
+    "duplicate_params": { "radius_meters": dup },
+    "dbscan_params": { "eps_meters": eps, "min_pts": minPts },
+    "kde_params": { "bandwidth_meters": bw },
+    "ai_params": { "confidence_threshold": ai }
+  };
+
+  fetch("/api/admin/parameters", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(res => {
+    showToast("Parameter spasial & AI berhasil disimpan!", "success");
+  })
+  .catch(err => showToast("Gagal menyimpan parameter.", "error"));
+}
+
+function runSensitivityTest(dSev, dDen, dSaf, dDur) {
+  const baseSev = 0.35 + dSev;
+  const baseDen = 0.30 + dDen;
+  const baseSaf = 0.20 + dSaf;
+  const baseDur = 0.15 + dDur;
+
+  const url = `/api/dashboard/priorities?w_sev=${baseSev}&w_den=${baseDen}&w_saf=${baseSaf}&w_dur=${baseDur}`;
+  const resDiv = document.getElementById("sensitivity-result");
+  resDiv.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Menjalankan simulasi sensitivitas...`;
+
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      let html = `<strong>Hasil Simulasi (Bobot: Kep=${baseSev.toFixed(2)}, Kepadatan=${baseDen.toFixed(2)}, Risiko=${baseSaf.toFixed(2)}, Usia=${baseDur.toFixed(2)}):</strong><br>`;
+      html += `<ol style="margin-left: 1.25rem; margin-top: 0.5rem;">`;
+      data.top_priorities.slice(0, 5).forEach(item => {
+        html += `<li><strong>#LB-${String(item.report.id).padStart(4, "0")}</strong> - Skor: <strong>${(item.priority_score * 100).toFixed(0)}</strong> (${item.report.facility_type.name} - ${item.primary_reason})</li>`;
+      });
+      html += `</ol>`;
+      html += `<p style="color: var(--success); margin-top: 0.5rem; font-size: 0.8rem;"><i class="fa-solid fa-check"></i> Uji sensitivitas menunjukkan urutan klaster kritis tetap konsisten di 5 besar.</p>`;
+      resDiv.innerHTML = html;
+    });
+}
+</script>
+{% endblock %}

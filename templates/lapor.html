@@ -1,0 +1,660 @@
+{% extends "base.html" %}
+
+{% block title %}Formulir Pengaduan Kerusakan - LaporBlater{% endblock %}
+
+{% block content %}
+<div class="form-container">
+  <div style="text-align: center; margin-bottom: 2rem;">
+    <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--secondary);">Lapor Kerusakan Fasilitas Umum</h1>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">Laporkan kerusakan jalan, penerangan (PJU), atau drainase di Desa Blater</p>
+  </div>
+
+  <!-- Stepper Indicator -->
+  <div class="stepper">
+    <div class="step-item active" id="step-indicator-1">
+      <div class="step-circle"><i class="fa-solid fa-camera"></i></div>
+      <div class="step-label">1. Foto</div>
+    </div>
+    <div class="step-item" id="step-indicator-2">
+      <div class="step-circle"><i class="fa-solid fa-location-dot"></i></div>
+      <div class="step-label">2. Lokasi</div>
+    </div>
+    <div class="step-item" id="step-indicator-3">
+      <div class="step-circle"><i class="fa-solid fa-tags"></i></div>
+      <div class="step-label">3. Jenis</div>
+    </div>
+    <div class="step-item" id="step-indicator-4">
+      <div class="step-circle"><i class="fa-solid fa-pen-to-square"></i></div>
+      <div class="step-label">4. Deskripsi</div>
+    </div>
+    <div class="step-item" id="step-indicator-5">
+      <div class="step-circle"><i class="fa-solid fa-check"></i></div>
+      <div class="step-label">5. Kirim</div>
+    </div>
+  </div>
+
+  <div class="card" id="form-card">
+    <!-- STEP 1: Upload Foto -->
+    <div class="step-content" id="step-1">
+      <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem;"><i class="fa-solid fa-camera" style="color: var(--primary);"></i> Langkah 1: Unggah Bukti Foto</h3>
+      <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem;">
+        Ambil foto atau pilih dari galeri. Koordinat GPS akan dibaca otomatis dari EXIF foto jika tersedia. Privasi Anda terlindungi: wajah dan pelat nomor disamarkan secara otomatis.
+      </p>
+
+      <div style="border: 2px dashed #cbd5e1; border-radius: var(--radius-lg); padding: 2.5rem 1.5rem; text-align: center; cursor: pointer; background: #f8fafc; transition: all 0.2s;" id="drop-zone" onclick="document.getElementById('photo-input').click()">
+        <input type="file" id="photo-input" accept="image/jpeg,image/png,image/webp" style="display: none;">
+        <div id="upload-prompt">
+          <i class="fa-solid fa-cloud-arrow-up" style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem;"></i>
+          <h4 style="font-weight: 700; margin-bottom: 0.25rem;">Klik untuk Mengunggah Foto</h4>
+          <p style="font-size: 0.825rem; color: var(--text-muted);">Format JPG, PNG, atau WEBP (Maksimal 5 MB)</p>
+        </div>
+        <div id="upload-preview" style="display: none;">
+          <img id="preview-img" style="max-height: 260px; max-width: 100%; border-radius: var(--radius-md); box-shadow: var(--shadow-md); margin-bottom: 1rem;">
+          <div id="upload-meta" style="font-size: 0.85rem; color: var(--text-muted);"></div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); document.getElementById('photo-input').click();" style="margin-top: 0.5rem;">
+            <i class="fa-solid fa-rotate"></i> Ganti Foto
+          </button>
+        </div>
+      </div>
+
+      <!-- AI Live Advice alert -->
+      <div id="ai-photo-alert" class="alert alert-info" style="display: none; margin-top: 1.25rem;">
+        <i class="fa-solid fa-robot" style="font-size: 1.25rem;"></i>
+        <div>
+          <strong id="ai-photo-title">AI Klasifikasi Gambar</strong>
+          <p id="ai-photo-desc" style="font-size: 0.85rem; margin-top: 0.25rem;"></p>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 2rem;">
+        <button type="button" class="btn btn-primary" id="btn-next-1" disabled onclick="goToStep(2)">
+          Lanjut ke Pemilihan Lokasi <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 2: Lokasi Spasial -->
+    <div class="step-content" id="step-2" style="display: none;">
+      <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem;"><i class="fa-solid fa-location-dot" style="color: var(--primary);"></i> Langkah 2: Tentukan Titik Lokasi</h3>
+      <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">
+        Geser penanda di peta atau gunakan tombol GPS perangkat. Lokasi harus berada di dalam batas administratif Desa Blater.
+      </p>
+
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-geolocate" onclick="useDeviceGPS()">
+          <i class="fa-solid fa-crosshairs"></i> Gunakan GPS Perangkat Saya
+        </button>
+        <span id="location-source-badge" class="badge badge-menunggu" style="align-self: center;">Sumber: Titik Manual</span>
+      </div>
+
+      <!-- Mini Map for Picking -->
+      <div style="height: 320px; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-color); margin-bottom: 1rem;">
+        <div id="picker-map" style="width: 100%; height: 100%;"></div>
+      </div>
+
+      <!-- Coordinate & Boundary Validation Display -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: #f8fafc; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 1rem;">
+        <div>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Koordinat Terpilih:</span>
+          <div style="font-weight: 700; font-size: 0.95rem;" id="coords-display">-7.4245, 109.3365</div>
+        </div>
+        <div id="boundary-status-badge">
+          <span class="badge badge-selesai"><i class="fa-solid fa-circle-check"></i> Dalam Wilayah Blater</span>
+        </div>
+      </div>
+
+      <div id="boundary-error-alert" class="alert alert-danger" style="display: none;">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span><strong>Lokasi Ditolak:</strong> Titik yang Anda pilih berada di luar wilayah administratif Desa Blater. Silakan geser penanda ke dalam area desa.</span>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; margin-top: 1.5rem;">
+        <button type="button" class="btn btn-secondary" onclick="goToStep(1)"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+        <button type="button" class="btn btn-primary" id="btn-next-2" onclick="goToStep(3)">Lanjut ke Jenis Fasilitas <i class="fa-solid fa-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Jenis Fasilitas -->
+    <div class="step-content" id="step-3" style="display: none;">
+      <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem;"><i class="fa-solid fa-tags" style="color: var(--primary);"></i> Langkah 3: Pilih Jenis Fasilitas</h3>
+      <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem;">
+        Pilih jenis fasilitas yang mengalami kerusakan.
+      </p>
+
+      <!-- AI Smart Suggestion Banner -->
+      <div id="ai-smart-advice" class="alert alert-warning" style="display: none;">
+        <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 1.25rem;"></i>
+        <div>
+          <strong>Saran Pintar Model AI:</strong>
+          <p id="ai-smart-advice-text" style="font-size: 0.875rem; margin: 0.25rem 0 0.5rem 0;"></p>
+          <button type="button" class="btn btn-sm btn-primary" id="btn-accept-ai-advice">
+            <i class="fa-solid fa-check"></i> Gunakan Saran AI
+          </button>
+        </div>
+      </div>
+
+      <!-- Facility Radio Cards -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <label class="facility-card" style="border: 2px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem 1rem; text-align: center; cursor: pointer; transition: all 0.2s;" id="fac-card-JALAN">
+          <input type="radio" name="facility_type" value="JALAN" style="display: none;" onchange="selectFacility('JALAN')">
+          <div style="font-size: 2.25rem; color: var(--accent-jalan); margin-bottom: 0.5rem;"><i class="fa-solid fa-road"></i></div>
+          <h4 style="font-weight: 800; font-size: 1.05rem; margin-bottom: 0.25rem;">Jalan</h4>
+          <p style="font-size: 0.775rem; color: var(--text-muted);">Berlubang, amblas, retak buaya</p>
+        </label>
+
+        <label class="facility-card" style="border: 2px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem 1rem; text-align: center; cursor: pointer; transition: all 0.2s;" id="fac-card-PJU">
+          <input type="radio" name="facility_type" value="PJU" style="display: none;" onchange="selectFacility('PJU')">
+          <div style="font-size: 2.25rem; color: var(--accent-pju); margin-bottom: 0.5rem;"><i class="fa-solid fa-lightbulb"></i></div>
+          <h4 style="font-weight: 800; font-size: 1.05rem; margin-bottom: 0.25rem;">PJU</h4>
+          <p style="font-size: 0.775rem; color: var(--text-muted);">Lampu padam, tiang miring/rusak</p>
+        </label>
+
+        <label class="facility-card" style="border: 2px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem 1rem; text-align: center; cursor: pointer; transition: all 0.2s;" id="fac-card-DRAINASE">
+          <input type="radio" name="facility_type" value="DRAINASE" style="display: none;" onchange="selectFacility('DRAINASE')">
+          <div style="font-size: 2.25rem; color: var(--accent-drainase); margin-bottom: 0.5rem;"><i class="fa-solid fa-water"></i></div>
+          <h4 style="font-weight: 800; font-size: 1.05rem; margin-bottom: 0.25rem;">Drainase</h4>
+          <p style="font-size: 0.775rem; color: var(--text-muted);">Tersumbat sampah/lumpur, tanggul jebol</p>
+        </label>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; margin-top: 1.5rem;">
+        <button type="button" class="btn btn-secondary" onclick="goToStep(2)"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+        <button type="button" class="btn btn-primary" id="btn-next-3" disabled onclick="goToStep(4)">Lanjut ke Deskripsi <i class="fa-solid fa-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <!-- STEP 4: Deskripsi & Kontak -->
+    <div class="step-content" id="step-4" style="display: none;">
+      <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem;"><i class="fa-solid fa-pen-to-square" style="color: var(--primary);"></i> Langkah 4: Rincian Kerusakan & Kontak</h3>
+      <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem;">
+        Berikan keterangan singkat mengenai kondisi kerusakan. Identitas bersifat opsional.
+      </p>
+
+      <div class="form-group">
+        <label class="form-label" for="report-desc">Deskripsi Kerusakan <span style="color: var(--danger);">*</span></label>
+        <textarea id="report-desc" class="form-control" maxlength="500" placeholder="Contoh: Aspal berlubang cukup dalam di depan warung makan, membahayakan pengendara motor saat hujan." oninput="updateCharCount()"></textarea>
+        <div style="display: flex; justify-content: flex-end; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+          <span id="char-count">0</span>/500 karakter
+        </div>
+      </div>
+
+      <div style="background: #f8fafc; padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 1.5rem;">
+        <h4 style="font-size: 0.925rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--secondary);">
+          <i class="fa-solid fa-id-card"></i> Identitas Pelapor (Opsional)
+        </h4>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Anda dapat melapor secara anonim. Jika nomor HP dicantumkan, perangkat desa dapat menghubungi Anda bila memerlukan klarifikasi lokasi.
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+          <div>
+            <label class="form-label" style="font-size: 0.825rem;" for="reporter-name">Nama Pelapor</label>
+            <input type="text" id="reporter-name" class="form-control" placeholder="Contoh: Budi Santoso / Anonim">
+          </div>
+          <div>
+            <label class="form-label" style="font-size: 0.825rem;" for="reporter-phone">Nomor Telepon / WhatsApp</label>
+            <input type="tel" id="reporter-phone" class="form-control" placeholder="08xxxxxxxxxx">
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; margin-top: 1.5rem;">
+        <button type="button" class="btn btn-secondary" onclick="goToStep(3)"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+        <button type="button" class="btn btn-primary" id="btn-next-4" onclick="goToStep(5)">Tinjau & Kirim <i class="fa-solid fa-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <!-- STEP 5: Konfirmasi & Kirim -->
+    <div class="step-content" id="step-5" style="display: none;">
+      <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem;"><i class="fa-solid fa-check-double" style="color: var(--primary);"></i> Langkah 5: Tinjau & Kirim Laporan</h3>
+      <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem;">
+        Pastikan informasi berikut sudah benar sebelum dikirimkan ke perangkat Desa Blater.
+      </p>
+
+      <div style="background: #f8fafc; border-radius: var(--radius-lg); border: 1px solid var(--border-color); padding: 1.5rem; margin-bottom: 1.5rem;">
+        <div style="display: flex; gap: 1.25rem; align-items: flex-start; flex-wrap: wrap;">
+          <img id="review-photo" style="width: 140px; height: 110px; object-fit: cover; border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
+          <div style="flex: 1; min-width: 240px;">
+            <div style="margin-bottom: 0.5rem;" id="review-facility-badge"></div>
+            <p id="review-desc" style="font-weight: 600; font-size: 0.95rem; color: var(--secondary); margin-bottom: 0.75rem;"></p>
+            <div style="font-size: 0.825rem; color: var(--text-muted);">
+              <div><i class="fa-solid fa-location-dot" style="color: var(--primary);"></i> <span id="review-coords"></span></div>
+              <div style="margin-top: 0.25rem;"><i class="fa-solid fa-user"></i> <span id="review-reporter"></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Privacy Consent Checkbox (UU PDP / PRD Section 14) -->
+      <label style="display: flex; align-items: flex-start; gap: 0.75rem; font-size: 0.85rem; color: var(--secondary-light); margin-bottom: 1.5rem; cursor: pointer;">
+        <input type="checkbox" id="privacy-consent" checked style="margin-top: 3px;">
+        <span>Saya menyetujui bahwa foto dan titik lokasi ini digunakan untuk penanganan fasilitas umum Desa Blater. Wajah dan pelat kendaraan akan disamarkan secara otomatis pada tampilan publik.</span>
+      </label>
+
+      <div style="display: flex; justify-content: space-between; margin-top: 1.5rem;">
+        <button type="button" class="btn btn-secondary" onclick="goToStep(4)"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+        <button type="button" class="btn btn-primary btn-lg" id="btn-submit" onclick="submitReport()">
+          <i class="fa-solid fa-paper-plane"></i> Kirim Laporan Sekarang
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Duplicate Detection Alert (F-05) -->
+<div id="duplicate-modal" class="modal-backdrop" style="display: none;">
+  <div class="modal-content">
+    <div style="text-align: center; margin-bottom: 1.25rem;">
+      <i class="fa-solid fa-clone" style="font-size: 2.5rem; color: var(--warning);"></i>
+      <h3 style="font-size: 1.25rem; font-weight: 800; margin-top: 0.5rem;">Laporan Serupa Terdeteksi!</h3>
+      <p style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem;">
+        Sistem mendeteksi adanya laporan dengan jenis fasilitas yang sama dalam radius 6 meter dari lokasi ini:
+      </p>
+    </div>
+
+    <div id="duplicate-list" style="background: #f8fafc; padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); font-size: 0.85rem; margin-bottom: 1.5rem; max-height: 160px; overflow-y: auto;"></div>
+
+    <div style="display: flex; gap: 0.75rem;">
+      <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="closeDuplicateModal()">Periksa Kembali</button>
+      <button type="button" class="btn btn-primary" style="flex: 1;" onclick="submitReport(true)">Tetap Kirim Laporan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Success Result -->
+<div id="success-modal" class="modal-backdrop" style="display: none;">
+  <div class="modal-content" style="text-align: center;">
+    <div style="width: 64px; height: 64px; background: var(--success-light); color: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 1rem auto;">
+      <i class="fa-solid fa-check"></i>
+    </div>
+    <h3 style="font-size: 1.35rem; font-weight: 800; color: var(--secondary); margin-bottom: 0.5rem;">Laporan Berhasil Terkirim!</h3>
+    <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+      Terima kasih telah berpartisipasi menjaga fasilitas Desa Blater. Laporan Anda telah tercatat dengan ID:
+    </p>
+    <div style="background: #f1f5f9; padding: 0.75rem 1rem; border-radius: var(--radius-md); font-weight: 800; font-size: 1.5rem; color: var(--primary); letter-spacing: 0.05em; margin-bottom: 1.5rem;" id="success-report-id">
+      #LB-000
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+      <a id="btn-view-status" href="#" class="btn btn-primary btn-lg">
+        <i class="fa-solid fa-clock-rotate-left"></i> Pantau Status Penanganan
+      </a>
+      <a href="/" class="btn btn-secondary">
+        <i class="fa-solid fa-map"></i> Kembali ke Peta Publik
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let currentStep = 1;
+let uploadedPhotoData = null;
+let selectedFacility = null;
+let selectedLat = -7.4245;
+let selectedLng = 109.3365;
+let locationSource = "manual_map";
+let isLocationValid = true;
+
+let pickerMap = null;
+let pickerMarker = null;
+let boundaryPolygonGeoJSON = null;
+
+document.addEventListener("DOMContentLoaded", function() {
+  initPickerMap();
+  setupPhotoUpload();
+});
+
+function goToStep(step) {
+  if (step === 2 && !uploadedPhotoData) {
+    showToast("Silakan unggah foto terlebih dahulu.", "error");
+    return;
+  }
+  if (step === 3 && !isLocationValid) {
+    showToast("Lokasi laporan berada di luar batas Desa Blater.", "error");
+    return;
+  }
+  if (step === 4 && !selectedFacility) {
+    showToast("Silakan pilih jenis fasilitas.", "error");
+    return;
+  }
+  if (step === 5) {
+    const desc = document.getElementById("report-desc").value.trim();
+    if (!desc) {
+      showToast("Deskripsi kerusakan wajib diisi.", "error");
+      return;
+    }
+    // Prepare Review Summary
+    document.getElementById("review-photo").src = uploadedPhotoData.public_url;
+    document.getElementById("review-facility-badge").innerHTML = getFacilityBadge(selectedFacility, selectedFacility);
+    document.getElementById("review-desc").innerText = desc;
+    document.getElementById("review-coords").innerText = `${selectedLat.toFixed(5)}, ${selectedLng.toFixed(5)} (${locationSource})`;
+    const name = document.getElementById("reporter-name").value.trim() || "Anonim (Warga)";
+    document.getElementById("review-reporter").innerText = name;
+  }
+
+  // Update UI steps
+  for (let i = 1; i <= 5; i++) {
+    const content = document.getElementById(`step-${i}`);
+    const indicator = document.getElementById(`step-indicator-${i}`);
+    if (content) content.style.display = (i === step) ? "block" : "none";
+    if (indicator) {
+      indicator.classList.remove("active");
+      if (i === step) indicator.classList.add("active");
+      if (i < step) indicator.classList.add("completed");
+    }
+  }
+
+  currentStep = step;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+
+  if (step === 2 && pickerMap) {
+    setTimeout(() => {
+      pickerMap.invalidateSize();
+      if (pickerMarker) pickerMap.setView([selectedLat, selectedLng], 16);
+    }, 200);
+  }
+}
+
+// 1. Photo Upload & EXIF & AI Processing
+function setupPhotoUpload() {
+  const photoInput = document.getElementById("photo-input");
+  photoInput.addEventListener("change", function(e) {
+    if (this.files && this.files[0]) {
+      uploadPhotoFile(this.files[0]);
+    }
+  });
+
+  const dropZone = document.getElementById("drop-zone");
+  dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.style.borderColor = "var(--primary)"; });
+  dropZone.addEventListener("dragleave", () => { dropZone.style.borderColor = "#cbd5e1"; });
+  dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropZone.style.borderColor = "#cbd5e1";
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      uploadPhotoFile(e.dataTransfer.files[0]);
+    }
+  });
+}
+
+function uploadPhotoFile(file) {
+  showToast("Mengunggah foto dan membaca metadata EXIF...", "info");
+  
+  const formData = new FormData();
+  formData.append("photo", file);
+
+  fetch("/api/photos/upload", {
+    method: "POST",
+    body: formData
+  })
+  .then(r => {
+    if (!r.ok) {
+      return r.json().then(err => { throw new Error(err.error || "Gagal mengunggah foto."); });
+    }
+    return r.json();
+  })
+  .then(data => {
+    uploadedPhotoData = data;
+    document.getElementById("upload-prompt").style.display = "none";
+    document.getElementById("upload-preview").style.display = "block";
+    document.getElementById("preview-img").src = data.public_url;
+    
+    let metaText = `Ukuran: ${data.width}x${data.height} px`;
+    if (data.exif && data.exif.lat && data.exif.lng) {
+      metaText += ` | <span style="color: var(--success); font-weight: 700;"><i class="fa-solid fa-satellite-dish"></i> GPS EXIF Terdeteksi: ${data.exif.lat}, ${data.exif.lng}</span>`;
+      selectedLat = data.exif.lat;
+      selectedLng = data.exif.lng;
+      locationSource = "exif";
+      document.getElementById("location-source-badge").className = "badge badge-selesai";
+      document.getElementById("location-source-badge").innerText = "Sumber: EXIF Foto";
+      updateMarkerPosition(selectedLat, selectedLng);
+    } else {
+      metaText += ` | <span>EXIF tanpa GPS (akan menggunakan GPS HP/peta manual)</span>`;
+    }
+    document.getElementById("upload-meta").innerHTML = metaText;
+
+    // AI Prediction Alert
+    if (data.ai_prediction) {
+      const ai = data.ai_prediction;
+      document.getElementById("ai-photo-alert").style.display = "flex";
+      document.getElementById("ai-photo-title").innerText = `AI Mendeteksi: ${ai.class_label} (${Math.round(ai.confidence * 100)}% Keyakinan)`;
+      document.getElementById("ai-photo-desc").innerText = `Model MobileNetV2 menganalisis karakteristik visual kerusakan fasilitas. Informasi ini membantu verifikasi perangkat desa.`;
+      
+      // Pre-select facility or prepare advice
+      const mappedCode = ai.predicted_class.replace("_RUSAK", "").replace("_TERSUMBAT", "");
+      if (mappedCode && ["JALAN", "PJU", "DRAINASE"].includes(mappedCode)) {
+        setupAIAdvice(mappedCode, ai.confidence, ai.class_label);
+      }
+    }
+
+    document.getElementById("btn-next-1").disabled = false;
+    showToast("Foto berhasil diproses & EXIF diekstraksi!", "success");
+  })
+  .catch(err => {
+    showToast(err.message, "error");
+  });
+}
+
+// 2. Leaflet Location Picker Map
+function initPickerMap() {
+  pickerMap = L.map("picker-map").setView([selectedLat, selectedLng], 15);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(pickerMap);
+
+  // Load Boundary
+  fetch("/api/map/boundary")
+    .then(r => r.json())
+    .then(data => {
+      boundaryPolygonGeoJSON = L.geoJSON(data, {
+        style: {
+          color: "#059669",
+          weight: 3,
+          dashArray: "5, 5",
+          fillColor: "#10b981",
+          fillOpacity: 0.1
+        }
+      }).addTo(pickerMap);
+      
+      // Set initial point from representative center
+      validatePoint(selectedLat, selectedLng);
+    });
+
+  // Draggable Marker
+  pickerMarker = L.marker([selectedLat, selectedLng], {
+    draggable: true
+  }).addTo(pickerMap);
+
+  pickerMarker.on("dragend", function(e) {
+    const pos = e.target.getLatLng();
+    selectedLat = pos.lat;
+    selectedLng = pos.lng;
+    locationSource = "manual_map";
+    document.getElementById("location-source-badge").className = "badge badge-menunggu";
+    document.getElementById("location-source-badge").innerText = "Sumber: Titik Manual";
+    validatePoint(selectedLat, selectedLng);
+  });
+
+  pickerMap.on("click", function(e) {
+    selectedLat = e.latlng.lat;
+    selectedLng = e.latlng.lng;
+    locationSource = "manual_map";
+    document.getElementById("location-source-badge").className = "badge badge-menunggu";
+    document.getElementById("location-source-badge").innerText = "Sumber: Titik Manual";
+    updateMarkerPosition(selectedLat, selectedLng);
+  });
+}
+
+function updateMarkerPosition(lat, lng) {
+  if (pickerMarker) pickerMarker.setLatLng([lat, lng]);
+  if (pickerMap) pickerMap.panTo([lat, lng]);
+  validatePoint(lat, lng);
+}
+
+function validatePoint(lat, lng) {
+  document.getElementById("coords-display").innerText = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  
+  fetch("/api/reports/validate-location", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ lat: lat, lng: lng })
+  })
+  .then(r => r.json())
+  .then(res => {
+    isLocationValid = res.is_valid;
+    const badge = document.getElementById("boundary-status-badge");
+    const errorAlert = document.getElementById("boundary-error-alert");
+    const btnNext = document.getElementById("btn-next-2");
+
+    if (res.is_valid) {
+      badge.innerHTML = `<span class="badge badge-selesai"><i class="fa-solid fa-circle-check"></i> Dalam Wilayah Blater</span>`;
+      errorAlert.style.display = "none";
+      btnNext.disabled = false;
+    } else {
+      badge.innerHTML = `<span class="badge badge-berat"><i class="fa-solid fa-circle-xmark"></i> Luar Desa Blater</span>`;
+      errorAlert.style.display = "flex";
+      btnNext.disabled = true;
+    }
+  });
+}
+
+function useDeviceGPS() {
+  if (!navigator.geolocation) {
+    showToast("Perangkat Anda tidak mendukung geolokasi.", "error");
+    return;
+  }
+  showToast("Mengambil koordinat GPS perangkat...", "info");
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      selectedLat = pos.coords.latitude;
+      selectedLng = pos.coords.longitude;
+      locationSource = "device_gps";
+      document.getElementById("location-source-badge").className = "badge badge-diproses";
+      document.getElementById("location-source-badge").innerText = `Sumber: GPS HP (Akurasi: ${Math.round(pos.coords.accuracy)}m)`;
+      updateMarkerPosition(selectedLat, selectedLng);
+      showToast("Koordinat GPS berhasil diperoleh!", "success");
+    },
+    (err) => {
+      showToast("Gagal memperoleh GPS. Izin lokasi mungkin ditolak.", "error");
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
+// 3. Facility Selection & AI Advice
+function selectFacility(code) {
+  selectedFacility = code;
+  document.querySelectorAll(".facility-card").forEach(c => {
+    c.style.borderColor = "var(--border-color)";
+    c.style.background = "white";
+  });
+  const activeCard = document.getElementById(`fac-card-${code}`);
+  if (activeCard) {
+    activeCard.style.borderColor = "var(--primary)";
+    activeCard.style.background = "var(--primary-light)";
+  }
+  document.getElementById("btn-next-3").disabled = false;
+}
+
+function setupAIAdvice(suggestedCode, confidence, classLabel) {
+  const adviceBox = document.getElementById("ai-smart-advice");
+  const adviceText = document.getElementById("ai-smart-advice-text");
+  const btnAccept = document.getElementById("btn-accept-ai-advice");
+
+  if (confidence >= 0.85) {
+    adviceBox.style.display = "flex";
+    adviceText.innerText = `Foto yang Anda unggah tampak seperti kerusakan '${classLabel}' dengan keyakinan ${Math.round(confidence*100)}%. Anda dapat menerima saran ini atau memilih sendiri secara manual.`;
+    btnAccept.onclick = function() {
+      selectFacility(suggestedCode);
+      showToast(`Kategori diubah menjadi ${suggestedCode} berdasarkan saran AI.`, "success");
+    };
+  }
+}
+
+// 4. Description Char Counter
+function updateCharCount() {
+  const desc = document.getElementById("report-desc").value;
+  document.getElementById("char-count").innerText = desc.length;
+}
+
+// 5. Submit Report
+function submitReport(forceSubmit = false) {
+  const desc = document.getElementById("report-desc").value.trim();
+  const consent = document.getElementById("privacy-consent").checked;
+
+  if (!consent) {
+    showToast("Mohon setujui ketentuan privasi untuk melanjutkan.", "error");
+    return;
+  }
+
+  const payload = {
+    facility_type: selectedFacility,
+    description: desc,
+    location: { lat: selectedLat, lng: selectedLng },
+    location_source: locationSource,
+    photo_id: uploadedPhotoData.photo_id,
+    reporter_name: document.getElementById("reporter-name").value.trim(),
+    reporter_phone: document.getElementById("reporter-phone").value.trim(),
+    force_submit: forceSubmit
+  };
+
+  const btnSubmit = document.getElementById("btn-submit");
+  btnSubmit.disabled = true;
+  btnSubmit.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Mengirim Laporan...`;
+
+  fetch("/api/reports", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+  .then(r => {
+    btnSubmit.disabled = false;
+    btnSubmit.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Kirim Laporan Sekarang`;
+
+    if (r.status === 409) {
+      // Duplicate suspect
+      return r.json().then(data => {
+        showDuplicateModal(data.duplicate_reports);
+      });
+    }
+    if (!r.ok) {
+      return r.json().then(err => { throw new Error(err.error || err.detail || "Gagal mengirim laporan."); });
+    }
+    return r.json();
+  })
+  .then(res => {
+    if (res && res.report_id) {
+      closeDuplicateModal();
+      document.getElementById("success-report-id").innerText = `#LB-${String(res.report_id).padStart(4, "0")}`;
+      document.getElementById("btn-view-status").href = res.tracking_url;
+      document.getElementById("success-modal").style.display = "flex";
+    }
+  })
+  .catch(err => {
+    showToast(err.message, "error");
+  });
+}
+
+function showDuplicateModal(duplicates) {
+  const listEl = document.getElementById("duplicate-list");
+  let html = `<ul style="list-style: none; padding: 0;">`;
+  duplicates.forEach(d => {
+    html += `
+      <li style="padding: 6px 0; border-bottom: 1px solid #e2e8f0;">
+        <strong>#LB-${String(d.report_id).padStart(4, "0")}</strong> (${d.distance_meters}m dari titik ini)<br>
+        <span style="color: #64748b;">"${d.description}"</span>
+      </li>
+    `;
+  });
+  html += `</ul>`;
+  listEl.innerHTML = html;
+  document.getElementById("duplicate-modal").style.display = "flex";
+}
+
+function closeDuplicateModal() {
+  document.getElementById("duplicate-modal").style.display = "none";
+}
+</script>
+{% endblock %}

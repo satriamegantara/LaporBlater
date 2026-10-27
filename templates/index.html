@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Peta Pengaduan Kerusakan Fasilitas Desa Blater - LaporBlater{% endblock %}
+
+{% block content %}
+<div class="map-viewport">
+  <div id="map"></div>
+
+  <!-- Floating Filter & Stats Panel -->
+  <div class="map-floating-panel">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+      <h2 style="font-size: 1.1rem; font-weight: 800; color: var(--secondary);">
+        <i class="fa-solid fa-map-location-dot" style="color: var(--primary);"></i> Peta Desa Blater
+      </h2>
+      <span class="badge badge-menunggu" id="report-count-badge">Memuat...</span>
+    </div>
+    
+    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+      Sistem pemantauan spasial kerusakan jalan, penerangan (PJU), dan saluran drainase di wilayah Desa Blater.
+    </p>
+
+    <!-- Filter by Facility -->
+    <div style="font-size: 0.8rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.25rem;">
+      Jenis Fasilitas:
+    </div>
+    <div class="filter-group" id="filter-facility">
+      <button class="filter-btn active" data-fac="">Semua</button>
+      <button class="filter-btn" data-fac="JALAN"><i class="fa-solid fa-road" style="color: var(--accent-jalan);"></i> Jalan</button>
+      <button class="filter-btn" data-fac="PJU"><i class="fa-solid fa-lightbulb" style="color: var(--accent-pju);"></i> PJU</button>
+      <button class="filter-btn" data-fac="DRAINASE"><i class="fa-solid fa-water" style="color: var(--accent-drainase);"></i> Drainase</button>
+    </div>
+
+    <!-- Filter by Status -->
+    <div style="font-size: 0.8rem; font-weight: 700; color: var(--secondary); margin-top: 0.75rem; margin-bottom: 0.25rem;">
+      Status Penanganan:
+    </div>
+    <div class="filter-group" id="filter-status">
+      <button class="filter-btn active" data-status="">Semua</button>
+      <button class="filter-btn" data-status="MENUNGGU_VERIFIKASI">Menunggu</button>
+      <button class="filter-btn" data-status="DIPROSES">Diproses</button>
+      <button class="filter-btn" data-status="SELESAI">Selesai</button>
+    </div>
+
+    <!-- Layer Switcher Checkboxes -->
+    <div style="font-size: 0.8rem; font-weight: 700; color: var(--secondary); margin-top: 0.85rem; margin-bottom: 0.4rem;">
+      Layer Peta:
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.8rem; color: var(--text-muted);">
+      <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+        <input type="checkbox" id="layer-boundary-toggle" checked> Batas Desa Blater
+      </label>
+      <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+        <input type="checkbox" id="layer-roads-toggle" checked> Jaringan Jalan Desa
+      </label>
+      <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+        <input type="checkbox" id="layer-reports-toggle" checked> Titik Pengaduan Kerusakan
+      </label>
+    </div>
+  </div>
+
+  <!-- Floating Action Buttons -->
+  <div class="map-floating-bottom">
+    <a href="/lapor" class="btn btn-primary btn-lg" style="box-shadow: 0 10px 25px rgba(37,99,235,0.4);">
+      <i class="fa-solid fa-camera"></i> Buat Laporan Kerusakan
+    </a>
+    <a href="/cek-status" class="btn btn-secondary btn-lg" style="box-shadow: var(--shadow-lg);">
+      <i class="fa-solid fa-clock-rotate-left"></i> Cek Status
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  // Initialize Leaflet Map centered around Desa Blater
+  const map = L.map("map", {
+    zoomControl: false
+  }).setView([-7.4245, 109.3365], 15);
+  
+  L.control.zoom({ position: "topright" }).addTo(map);
+
+  // OpenStreetMap Tile Layer
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> kontributor | LaporBlater'
+  }).addTo(map);
+
+  let boundaryLayer = null;
+  let roadsLayer = null;
+  let reportsLayer = L.layerGroup().addTo(map);
+
+  // 1. Load Desa Blater Boundary
+  fetch("/api/map/boundary")
+    .then(r => r.json())
+    .then(data => {
+      boundaryLayer = L.geoJSON(data, {
+        style: {
+          color: "#059669",
+          weight: 3,
+          dashArray: "6, 6",
+          fillColor: "#10b981",
+          fillOpacity: 0.08
+        }
+      }).addTo(map);
+      map.fitBounds(boundaryLayer.getBounds(), { padding: [40, 40] });
+    })
+    .catch(err => console.error("Boundary error:", err));
+
+  // 2. Load Desa Blater Roads
+  fetch("/api/map/roads")
+    .then(r => r.json())
+    .then(data => {
+      roadsLayer = L.geoJSON(data, {
+        style: {
+          color: "#f59e0b",
+          weight: 2.5,
+          opacity: 0.7
+        }
+      }).addTo(map);
+    })
+    .catch(err => console.error("Roads error:", err));
+
+  // Function to create custom markers
+  function createCustomIcon(facCode) {
+    let pinClass = "pin-jalan";
+    let iconClass = "fa-road";
+    if (facCode === "PJU") {
+      pinClass = "pin-pju";
+      iconClass = "fa-lightbulb";
+    } else if (facCode === "DRAINASE") {
+      pinClass = "pin-drainase";
+      iconClass = "fa-water";
+    }
+    
+    return L.divIcon({
+      className: "custom-div-icon",
+      html: `<div class="custom-pin ${pinClass}"><i class="fa-solid ${iconClass} custom-pin-inner"></i></div>`,
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -32]
+    });
+  }
+
+  // 3. Load Reports
+  let activeFacFilter = "";
+  let activeStatusFilter = "";
+
+  function loadReports() {
+    reportsLayer.clearLayers();
+    const url = `/api/map/reports?facility_type=${activeFacFilter}&status=${activeStatusFilter}`;
+    
+    fetch(url)
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById("report-count-badge").innerText = `${data.count} Laporan`;
+        
+        data.features.forEach(feat => {
+          const coords = feat.geometry.coordinates; // [lng, lat]
+          const props = feat.properties;
+          
+          const marker = L.marker([coords[1], coords[0]], {
+            icon: createCustomIcon(props.facility_code)
+          });
+          
+          const popupContent = `
+            <div style="max-width: 260px; font-family: var(--font-sans);">
+              ${props.photo_url ? `<img src="${props.photo_url}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 8px;">` : ''}
+              <div style="display: flex; gap: 4px; margin-bottom: 6px;">
+                ${getFacilityBadge(props.facility_code, props.facility_type)}
+                ${getStatusBadge(props.status_code, props.status)}
+              </div>
+              <p style="font-size: 0.85rem; font-weight: 600; color: #1e293b; margin-bottom: 6px;">${props.description}</p>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: #64748b; margin-bottom: 8px;">
+                <span><i class="fa-regular fa-calendar"></i> ${props.created_at}</span>
+                <span>${getSeverityBadge(props.severity)}</span>
+              </div>
+              <a href="/laporan/${props.id}" class="btn btn-secondary btn-sm" style="width: 100%; text-align: center;">
+                <i class="fa-solid fa-circle-info"></i> Lihat Status Penanganan
+              </a>
+            </div>
+          `;
+          
+          marker.bindPopup(popupContent);
+          reportsLayer.addLayer(marker);
+        });
+      })
+      .catch(err => console.error("Error loading reports:", err));
+  }
+
+  loadReports();
+
+  // Filter Event Listeners
+  document.querySelectorAll("#filter-facility .filter-btn").forEach(btn => {
+    btn.addEventListener("click", function() {
+      document.querySelectorAll("#filter-facility .filter-btn").forEach(b => b.classList.remove("active"));
+      this.classList.add("active");
+      activeFacFilter = this.getAttribute("data-fac");
+      loadReports();
+    });
+  });
+
+  document.querySelectorAll("#filter-status .filter-btn").forEach(btn => {
+    btn.addEventListener("click", function() {
+      document.querySelectorAll("#filter-status .filter-btn").forEach(b => b.classList.remove("active"));
+      this.classList.add("active");
+      activeStatusFilter = this.getAttribute("data-status");
+      loadReports();
+    });
+  });
+
+  // Layer Toggles
+  document.getElementById("layer-boundary-toggle").addEventListener("change", function(e) {
+    if (e.target.checked && boundaryLayer) map.addLayer(boundaryLayer);
+    else if (boundaryLayer) map.removeLayer(boundaryLayer);
+  });
+
+  document.getElementById("layer-roads-toggle").addEventListener("change", function(e) {
+    if (e.target.checked && roadsLayer) map.addLayer(roadsLayer);
+    else if (roadsLayer) map.removeLayer(roadsLayer);
+  });
+
+  document.getElementById("layer-reports-toggle").addEventListener("change", function(e) {
+    if (e.target.checked) map.addLayer(reportsLayer);
+    else map.removeLayer(reportsLayer);
+  });
+});
+</script>
+{% endblock %}

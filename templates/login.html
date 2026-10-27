@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Masuk Pengelola - LaporBlater{% endblock %}
+
+{% block content %}
+<div class="form-container" style="max-width: 440px; margin-top: 4rem;">
+  <div class="card" style="box-shadow: var(--shadow-xl);">
+    <div style="text-align: center; margin-bottom: 2rem;">
+      <div class="brand-icon" style="margin: 0 auto 1rem auto; width: 52px; height: 52px; font-size: 1.5rem;">
+        <i class="fa-solid fa-user-shield"></i>
+      </div>
+      <h2 style="font-size: 1.5rem; font-weight: 800; color: var(--secondary);">Login Pengelola Desa</h2>
+      <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">
+        Portal khusus Perangkat Desa & Administrator LaporBlater
+      </p>
+    </div>
+
+    <form id="login-form" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label class="form-label" for="login-email">Alamat Email</label>
+        <div style="position: relative;">
+          <input type="email" id="login-email" class="form-control" placeholder="petugas@blater.desa.id" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="login-password">Kata Sandi</label>
+        <div style="position: relative;">
+          <input type="password" id="login-password" class="form-control" placeholder="••••••••" required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="btn-login-submit" style="width: 100%; padding: 0.8rem; font-size: 1rem; margin-top: 0.5rem;">
+        <i class="fa-solid fa-right-to-bracket"></i> Masuk ke Dasbor
+      </button>
+    </form>
+
+    <!-- Quick Credentials Helper for Demo & Evaluation -->
+    <div style="margin-top: 2rem; padding-top: 1.25rem; border-top: 1px dashed var(--border-color); font-size: 0.8rem; color: var(--text-muted);">
+      <div style="font-weight: 700; color: var(--secondary); margin-bottom: 0.5rem;">Akun Bawaan Sistem (Demo):</div>
+      <div style="display: flex; gap: 0.5rem;">
+        <button type="button" class="btn btn-secondary btn-sm" style="flex: 1;" onclick="fillCreds('petugas@blater.desa.id', 'petugas123')">
+          <i class="fa-solid fa-user-gear"></i> Perangkat Desa
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" style="flex: 1;" onclick="fillCreds('admin@blater.desa.id', 'admin123')">
+          <i class="fa-solid fa-shield"></i> Admin
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function fillCreds(email, password) {
+  document.getElementById("login-email").value = email;
+  document.getElementById("login-password").value = password;
+}
+
+function handleLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById("login-email").value.trim();
+  const password = document.getElementById("login-password").value;
+  const btn = document.getElementById("btn-login-submit");
+
+  btn.disabled = true;
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Memverifikasi...`;
+
+  fetch("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: email, password: password })
+  })
+  .then(r => {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="fa-solid fa-right-to-bracket"></i> Masuk ke Dasbor`;
+    if (!r.ok) {
+      return r.json().then(err => { throw new Error(err.error || "Login gagal."); });
+    }
+    return r.json();
+  })
+  .then(res => {
+    localStorage.setItem("laporblater_token", res.token);
+    showToast("Login berhasil! Mengalihkan ke dasbor...", "success");
+    setTimeout(() => {
+      window.location.href = "/dashboard";
+    }, 600);
+  })
+  .catch(err => {
+    showToast(err.message, "error");
+  });
+}
+</script>
+{% endblock %}

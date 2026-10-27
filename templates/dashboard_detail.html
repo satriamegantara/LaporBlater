@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block title %}Detail Pengaduan #LB-{{ report_id }} - LaporBlater{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div style="padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 1.5rem;">
+      <a href="/dashboard" class="btn btn-secondary btn-sm" style="width: 100%;">
+        <i class="fa-solid fa-arrow-left"></i> Kembali ke Dasbor
+      </a>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li><a href="/dashboard" class="sidebar-link"><i class="fa-solid fa-chart-pie"></i> Dasbor Utama</a></li>
+      <li><a href="/dashboard" class="sidebar-link active"><i class="fa-solid fa-file-lines"></i> Detail Pengaduan</a></li>
+      {% if session.get('user_role') == 'admin' %}
+      <li><a href="/dashboard/pengaturan" class="sidebar-link"><i class="fa-solid fa-sliders"></i> Pengaturan</a></li>
+      {% endif %}
+    </ul>
+  </aside>
+
+  <!-- Detail Content -->
+  <main class="dashboard-content">
+    <div id="detail-loading" style="text-align: center; padding: 4rem;">
+      <i class="fa-solid fa-spinner fa-spin" style="font-size: 2.5rem; color: var(--primary);"></i>
+      <p style="color: var(--text-muted); margin-top: 1rem;">Memuat rincian laporan pengaduan...</p>
+    </div>
+
+    <div id="detail-card" style="display: none;">
+      <!-- Header -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.25rem;">
+            <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--secondary);" id="rep-code">#LB-0000</h1>
+            <span id="rep-source-badge"></span>
+          </div>
+          <p style="color: var(--text-muted); font-size: 0.85rem;" id="rep-date"></p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;" id="rep-badges"></div>
+      </div>
+
+      <!-- Main Layout Grid -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <!-- Left Column: Photo & AI Model Analysis -->
+        <div class="card">
+          <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: var(--secondary);">
+            <i class="fa-solid fa-camera"></i> Dokumentasi Foto & Model AI
+          </h3>
+          
+          <div style="margin-bottom: 1rem; text-align: center;">
+            <img id="rep-photo-orig" style="width: 100%; max-height: 280px; object-fit: cover; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem;">
+              <span><i class="fa-solid fa-lock"></i> Versi Asli (Akses Terbatas Pengelola)</span>
+              <a id="link-public-photo" href="#" target="_blank" style="color: var(--primary); text-decoration: none;">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Lihat Versi Publik (Disamarkan)
+              </a>
+            </div>
+          </div>
+
+          <!-- AI Prediction Card (PRD 8.2 F-09) -->
+          <div style="background: #eff6ff; padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid #bfdbfe;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span style="font-size: 0.8rem; font-weight: 800; color: var(--primary); text-transform: uppercase;">
+                <i class="fa-solid fa-microchip"></i> Klasifikasi Otomatis AI
+              </span>
+              <span class="badge badge-diverifikasi" id="ai-model-tag">MobileNetV2</span>
+            </div>
+            
+            <div style="font-size: 1.15rem; font-weight: 800; color: #1e3a8a; margin-bottom: 0.25rem;" id="ai-class-name">-</div>
+            
+            <div style="margin-bottom: 0.75rem;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.775rem; font-weight: 600; color: #475569; margin-bottom: 0.25rem;">
+                <span>Tingkat Keyakinan (Confidence)</span>
+                <span id="ai-conf-val">0%</span>
+              </div>
+              <div style="height: 8px; background: #dbeafe; border-radius: 99px; overflow: hidden;">
+                <div id="ai-conf-bar" style="height: 100%; background: linear-gradient(90deg, #3b82f6, #1d4ed8); width: 0%;"></div>
+              </div>
+            </div>
+
+            <p style="font-size: 0.775rem; color: #64748b; margin: 0;">
+              *Prediksi AI bertindak sebagai pendukung keputusan (decision support) bagi pengelola dalam memvalidasi kategori dan tingkat keparahan.
+            </p>
+          </div>
+        </div>
+
+        <!-- Right Column: Location Map & Report Details -->
+        <div class="card">
+          <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: var(--secondary);">
+            <i class="fa-solid fa-location-dot"></i> Peta Lokasi Spasial
+          </h3>
+
+          <div style="height: 220px; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-color); margin-bottom: 1rem;">
+            <div id="mini-map" style="width: 100%; height: 100%;"></div>
+          </div>
+
+          <div style="font-size: 0.85rem; color: var(--secondary); margin-bottom: 1.25rem; line-height: 1.6;">
+            <div><i class="fa-solid fa-compass" style="color: var(--primary);"></i> Koordinat: <strong id="rep-coords"></strong></div>
+            <div><i class="fa-solid fa-tag" style="color: var(--primary);"></i> Sumber Posisi: <strong id="rep-source"></strong></div>
+            <div id="rep-reporter-info" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border-color);"></div>
+          </div>
+
+          <!-- Description -->
+          <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--secondary);">Deskripsi Pelapor:</h4>
+          <p id="rep-desc" style="font-size: 0.95rem; background: #f8fafc; padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); line-height: 1.6; margin-bottom: 1.5rem;"></p>
+
+          <!-- Quick Action Buttons -->
+          <div style="display: flex; gap: 0.75rem;">
+            <button class="btn btn-primary" onclick="openUpdateModal()" style="flex: 1;">
+              <i class="fa-solid fa-pen-to-square"></i> Perbarui Status & Keparahan
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chronological History Audit Trail (PRD 7.7, 8.3 F-12) -->
+      <div class="card">
+        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: var(--secondary);">
+          <i class="fa-solid fa-timeline"></i> Riwayat Audit & Status Penanganan
+        </h3>
+        <div id="history-trail" style="display: flex; flex-direction: column; gap: 0.75rem;"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal: Status & Severity Update -->
+<div id="modal-update-status" class="modal-backdrop" style="display: none;">
+  <div class="modal-content">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+      <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--secondary);">Tindak Lanjut Laporan</h3>
+      <button type="button" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: var(--text-muted);" onclick="closeUpdateModal()">&times;</button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Tingkat Status Penanganan</label>
+      <select id="sel-next-status" class="form-control"></select>
+      <small style="color: var(--text-muted); font-size: 0.775rem;">Alur status: Menunggu &rarr; Diverifikasi &rarr; Diproses &rarr; Selesai.</small>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Tingkat Keparahan</label>
+      <select id="sel-severity" class="form-control">
+        <option value="ringan">Ringan (Kerusakan kecil)</option>
+        <option value="sedang">Sedang (Perlu penanganan rutin)</option>
+        <option value="berat">Berat (Mendesak / Berbahaya)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Catatan Perubahan / Tindak Lanjut</label>
+      <textarea id="txt-note" class="form-control" rows="3" placeholder="Masukkan instruksi tim teknis atau rincian perbaikan..."></textarea>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+      <button type="button" class="btn btn-secondary" onclick="closeUpdateModal()">Batal</button>
+      <button type="button" class="btn btn-primary" onclick="submitDetailUpdate()">Simpan Perubahan</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const reportId = {{ report_id }};
+let reportData = null;
+let miniMap = null;
+
+document.addEventListener("DOMContentLoaded", function() {
+  loadReportDetail();
+});
+
+function loadReportDetail() {
+  fetch(`/api/reports/${reportId}`)
+    .then(r => {
+      if (!r.ok) throw new Error("Gagal memuat detail laporan.");
+      return r.json();
+    })
+    .then(data => {
+      reportData = data.report;
+      const history = data.history;
+
+      document.getElementById("detail-loading").style.display = "none";
+      document.getElementById("detail-card").style.display = "block";
+
+      document.getElementById("rep-code").innerText = `#LB-${String(reportData.id).padStart(4, "0")}`;
+      document.getElementById("rep-date").innerText = `Dibuat pada: ${formatDate(reportData.created_at)}`;
+      
+      const srcBadge = reportData.source_type === "survei_tim" 
+        ? `<span class="badge badge-diverifikasi"><i class="fa-solid fa-clipboard-user"></i> Survei Tim SIG</span>`
+        : `<span class="badge badge-menunggu"><i class="fa-solid fa-user"></i> Laporan Warga</span>`;
+      document.getElementById("rep-source-badge").innerHTML = srcBadge;
+
+      document.getElementById("rep-badges").innerHTML = `
+        ${getFacilityBadge(reportData.facility_type ? reportData.facility_type.code : '', reportData.facility_type ? reportData.facility_type.name : '')}
+        ${getStatusBadge(reportData.status ? reportData.status.code : '', reportData.status ? reportData.status.name : '')}
+        ${getSeverityBadge(reportData.severity)}
+      `;
+
+      // Photo & AI
+      const photo = reportData.photos && reportData.photos[0] ? reportData.photos[0] : null;
+      if (photo) {
+        document.getElementById("rep-photo-orig").src = photo.file_url;
+        document.getElementById("link-public-photo").href = `/uploads/photos/public/${photo.file_url.split('/').pop()}`;
+
+        if (photo.ai_predictions && photo.ai_predictions[0]) {
+          const ai = photo.ai_predictions[0];
+          document.getElementById("ai-class-name").innerText = ai.predicted_class;
+          document.getElementById("ai-conf-val").innerText = `${Math.round(ai.confidence * 100)}%`;
+          document.getElementById("ai-conf-bar").style.width = `${Math.round(ai.confidence * 100)}%`;
+          document.getElementById("ai-model-tag").innerText = `${ai.model_name} (${ai.model_version})`;
+        }
+      }
+
+      // Location & Info
+      document.getElementById("rep-coords").innerText = `${reportData.location.lat.toFixed(6)}, ${reportData.location.lng.toFixed(6)}`;
+      document.getElementById("rep-source").innerText = reportData.location_source;
+      document.getElementById("rep-desc").innerText = reportData.description;
+
+      // Reporter
+      if (reportData.reporter) {
+        document.getElementById("rep-reporter-info").innerHTML = `
+          <div><i class="fa-solid fa-user"></i> Pelapor: <strong>${reportData.reporter.name || 'Anonim'}</strong></div>
+          ${reportData.reporter.phone ? `<div><i class="fa-solid fa-phone"></i> Kontak: <strong>${reportData.reporter.phone}</strong></div>` : ''}
+          ${reportData.reporter.email ? `<div><i class="fa-solid fa-envelope"></i> Email: <strong>${reportData.reporter.email}</strong></div>` : ''}
+        `;
+      }
+
+      // Mini Map
+      initMiniMap(reportData.location.lat, reportData.location.lng);
+
+      // Render History
+      renderHistory(history);
+    })
+    .catch(err => {
+      showToast(err.message, "error");
+    });
+}
+
+function initMiniMap(lat, lng) {
+  if (miniMap) return;
+
+  miniMap = L.map("mini-map", { zoomControl: false }).setView([lat, lng], 16);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(miniMap);
+  L.control.zoom({ position: "bottomright" }).addTo(miniMap);
+
+  L.marker([lat, lng]).addTo(miniMap);
+}
+
+function renderHistory(history) {
+  const container = document.getElementById("history-trail");
+  if (!history || history.length === 0) {
+    container.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem;">Belum ada riwayat tercatat.</p>`;
+    return;
+  }
+
+  let html = "";
+  history.forEach(h => {
+    html += `
+      <div style="background: #f8fafc; padding: 1rem; border-radius: var(--radius-md); border-left: 4px solid var(--primary);">
+        <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 0.9rem; margin-bottom: 0.35rem;">
+          <span>${h.to_status}</span>
+          <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">${formatDate(h.changed_at)}</span>
+        </div>
+        <p style="color: #475569; font-size: 0.85rem; margin-bottom: 0.25rem;">${h.note || '-'}</p>
+        <span style="font-size: 0.75rem; color: #94a3b8;"><i class="fa-solid fa-user-pen"></i> Oleh: ${h.changed_by || 'Sistem'}</span>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+function openUpdateModal() {
+  const currentStatus = reportData.status ? reportData.status.code : "MENUNGGU_VERIFIKASI";
+  const selNext = document.getElementById("sel-next-status");
+  selNext.innerHTML = "";
+
+  // Strictly define valid next status transitions (PRD 8.3 F-12)
+  if (currentStatus === "MENUNGGU_VERIFIKASI") {
+    selNext.innerHTML = `<option value="DIVERIFIKASI">DIVERIFIKASI (Verifikasi Laporan Masuk)</option>`;
+  } else if (currentStatus === "DIVERIFIKASI") {
+    selNext.innerHTML = `<option value="DIPROSES">DIPROSES (Mulai Perbaikan Lapangan)</option>`;
+  } else if (currentStatus === "DIPROSES") {
+    selNext.innerHTML = `<option value="SELESAI">SELESAI (Perbaikan Selesai)</option>`;
+  } else {
+    selNext.innerHTML = `<option value="SELESAI" disabled>Status Akhir (Selesai)</option>`;
+  }
+
+  document.getElementById("sel-severity").value = reportData.severity || "sedang";
+  document.getElementById("modal-update-status").style.display = "flex";
+}
+
+function closeUpdateModal() {
+  document.getElementById("modal-update-status").style.display = "none";
+}
+
+function submitDetailUpdate() {
+  const status = document.getElementById("sel-next-status").value;
+  const severity = document.getElementById("sel-severity").value;
+  const note = document.getElementById("txt-note").value.trim();
+
+  // Status update
+  fetch(`/api/reports/${reportId}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status: status, note: note })
+  })
+  .then(r => {
+    if (!r.ok) return r.json().then(e => { throw new Error(e.error || "Gagal update status."); });
+    return r.json();
+  })
+  .then(() => {
+    return fetch(`/api/reports/${reportId}/severity`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ severity: severity })
+    });
+  })
+  .then(() => {
+    showToast("Status & tingkat keparahan berhasil diperbarui!", "success");
+    closeUpdateModal();
+    loadReportDetail();
+  })
+  .catch(err => {
+    showToast(err.message, "error");
+  });
+}
+</script>
+{% endblock %}

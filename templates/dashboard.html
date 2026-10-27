@@ -1,0 +1,642 @@
+{% extends "base.html" %}
+
+{% block title %}Dasbor Pengelola Spasial - LaporBlater{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div style="display: flex; align-items: center; gap: 0.75rem; padding-bottom: 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+      <div style="width: 36px; height: 36px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;">
+        {{ session.get('user_name', 'P')[0] }}
+      </div>
+      <div>
+        <div style="font-weight: 700; font-size: 0.95rem;">{{ session.get('user_name', 'Pengelola') }}</div>
+        <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase;">{{ session.get('user_role', 'pengelola') }}</div>
+      </div>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li>
+        <a href="#tab-overview" class="sidebar-link active" onclick="switchTab('overview', this)">
+          <i class="fa-solid fa-chart-simple"></i> Ringkasan & Prioritas
+        </a>
+      </li>
+      <li>
+        <a href="#tab-spatial" class="sidebar-link" onclick="switchTab('spatial', this)">
+          <i class="fa-solid fa-map-location"></i> Peta Analisis Spasial
+        </a>
+      </li>
+      <li>
+        <a href="#tab-reports" class="sidebar-link" onclick="switchTab('reports', this)">
+          <i class="fa-solid fa-list-check"></i> Kelola Laporan
+        </a>
+      </li>
+      {% if session.get('user_role') == 'admin' %}
+      <li>
+        <a href="/dashboard/pengaturan" class="sidebar-link">
+          <i class="fa-solid fa-sliders"></i> Pengaturan Parameter
+        </a>
+      </li>
+      {% endif %}
+      <li style="margin-top: 2rem;">
+        <a href="/api/auth/logout" class="sidebar-link" style="color: #f87171;">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar
+        </a>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="dashboard-content">
+    <!-- Top KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card" style="border-left: 4px solid var(--primary);">
+        <span class="kpi-label">Total Laporan Masuk</span>
+        <span class="kpi-value" id="kpi-total">0</span>
+        <span style="font-size: 0.75rem; color: var(--text-muted);"><i class="fa-solid fa-database"></i> Seluruh data pengaduan</span>
+      </div>
+      <div class="kpi-card" style="border-left: 4px solid var(--warning);">
+        <span class="kpi-label">Menunggu Verifikasi</span>
+        <span class="kpi-value" style="color: var(--warning);" id="kpi-menunggu">0</span>
+        <span style="font-size: 0.75rem; color: var(--text-muted);"><i class="fa-solid fa-clock"></i> Memerlukan tindak lanjut</span>
+      </div>
+      <div class="kpi-card" style="border-left: 4px solid var(--accent-jalan);">
+        <span class="kpi-label">Sedang Diproses</span>
+        <span class="kpi-value" style="color: var(--accent-jalan);" id="kpi-diproses">0</span>
+        <span style="font-size: 0.75rem; color: var(--text-muted);"><i class="fa-solid fa-wrench"></i> Dalam pekerjaan lapangan</span>
+      </div>
+      <div class="kpi-card" style="border-left: 4px solid var(--success);">
+        <span class="kpi-label">Selesai Ditangani</span>
+        <span class="kpi-value" style="color: var(--success);" id="kpi-selesai">0</span>
+        <span style="font-size: 0.75rem; color: var(--text-muted);"><i class="fa-solid fa-circle-check"></i> Perbaikan tuntas</span>
+      </div>
+    </div>
+
+    <!-- TAB 1: Overview & Priorities -->
+    <div id="section-overview" class="tab-pane">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--secondary);">
+            <i class="fa-solid fa-fire-flame-curved" style="color: #ef4444;"></i> Matriks Prioritas Penanganan Fasilitas (Top 10)
+          </h2>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">
+            Dihitung otomatis: S = 0.35 × Keparahan + 0.30 × Kepadatan (KDE/DBSCAN) + 0.20 × Risiko Keselamatan + 0.15 × Lama Belum Ditangani (PRD 8.5)
+          </p>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="loadPriorities()">
+          <i class="fa-solid fa-rotate"></i> Hitung Ulang
+        </button>
+      </div>
+
+      <div class="table-responsive" style="margin-bottom: 2.5rem;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 70px;">Peringkat</th>
+              <th>Skor (S)</th>
+              <th>ID & Fasilitas</th>
+              <th>Keterangan</th>
+              <th>Alasan Utama</th>
+              <th>Komponen Terbobot</th>
+              <th style="width: 140px; text-align: center;">Tindakan</th>
+            </tr>
+          </thead>
+          <tbody id="priority-table-body">
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                <i class="fa-solid fa-spinner fa-spin"></i> Memuat daftar prioritas...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 2: Spatial Intelligence Map -->
+    <div id="section-spatial" class="tab-pane" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--secondary);">
+            <i class="fa-solid fa-layer-group" style="color: var(--primary);"></i> Peta Analisis Spasial & Hotspot
+          </h2>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">
+            Visualisasi persebaran kerusakan, Kernel Density Estimation (KDE), Klaster DBSCAN, dan Getis-Ord Gi*
+          </p>
+        </div>
+      </div>
+
+      <!-- Analysis Layer Toggles -->
+      <div style="background: white; padding: 1rem 1.25rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color); margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; box-shadow: var(--shadow-sm);">
+        <span style="font-size: 0.85rem; font-weight: 700; color: var(--secondary);"><i class="fa-solid fa-filter"></i> Layer Spasial:</span>
+        <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer;">
+          <input type="checkbox" id="dash-toggle-markers" checked> Titik Laporan
+        </label>
+        <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer;">
+          <input type="checkbox" id="dash-toggle-kde"> Peta Panas KDE (Kepadatan)
+        </label>
+        <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer;">
+          <input type="checkbox" id="dash-toggle-dbscan"> Klaster Kepadatan DBSCAN
+        </label>
+        <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer;">
+          <input type="checkbox" id="dash-toggle-getis"> Hotspot Getis-Ord Gi*
+        </label>
+      </div>
+
+      <div style="height: 520px; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border-color); box-shadow: var(--shadow-md); position: relative;">
+        <div id="dash-map" style="width: 100%; height: 100%;"></div>
+      </div>
+    </div>
+
+    <!-- TAB 3: Reports Management -->
+    <div id="section-reports" class="tab-pane" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--secondary);">
+            <i class="fa-solid fa-table-list" style="color: var(--primary);"></i> Kelola & Verifikasi Laporan
+          </h2>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">
+            Daftar laporan pengaduan masyarakat dan data survei lapangan tim SIG
+          </p>
+        </div>
+
+        <!-- Filters -->
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <select id="mgmt-filter-fac" class="form-control" style="width: 140px; padding: 0.45rem 0.75rem; font-size: 0.825rem;" onchange="loadReportsTable()">
+            <option value="">Semua Fasilitas</option>
+            <option value="JALAN">Jalan</option>
+            <option value="PJU">PJU</option>
+            <option value="DRAINASE">Drainase</option>
+          </select>
+          <select id="mgmt-filter-status" class="form-control" style="width: 150px; padding: 0.45rem 0.75rem; font-size: 0.825rem;" onchange="loadReportsTable()">
+            <option value="">Semua Status</option>
+            <option value="MENUNGGU_VERIFIKASI">Menunggu</option>
+            <option value="DIVERIFIKASI">Diverifikasi</option>
+            <option value="DIPROSES">Diproses</option>
+            <option value="SELESAI">Selesai</option>
+          </select>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="loadReportsTable()">
+            <i class="fa-solid fa-arrows-rotate"></i> Refresh
+          </button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 80px;">ID</th>
+              <th style="width: 90px;">Foto</th>
+              <th>Jenis Fasilitas</th>
+              <th>Prediksi AI</th>
+              <th>Status</th>
+              <th>Keparahan</th>
+              <th>Tanggal</th>
+              <th style="width: 120px; text-align: center;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="mgmt-reports-body">
+            <tr>
+              <td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                <i class="fa-solid fa-spinner fa-spin"></i> Memuat laporan...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal: Quick Status & Severity Update -->
+<div id="update-modal" class="modal-backdrop" style="display: none;">
+  <div class="modal-content">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+      <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--secondary);">Perbarui Status & Keparahan</h3>
+      <button type="button" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: var(--text-muted);" onclick="closeUpdateModal()">&times;</button>
+    </div>
+
+    <input type="hidden" id="modal-report-id">
+    
+    <div class="form-group">
+      <label class="form-label">Ubah Status Penanganan</label>
+      <select id="modal-status-select" class="form-control">
+        <option value="DIVERIFIKASI">Diverifikasi (Disetujui untuk Penanganan)</option>
+        <option value="DIPROSES">Sedang Diproses (Pekerjaan Lapangan)</option>
+        <option value="SELESAI">Selesai (Kerusakan Telah Diperbaiki)</option>
+      </select>
+      <small style="color: var(--text-muted); font-size: 0.775rem;">Status mengikuti alur baku: Menunggu &rarr; Diverifikasi &rarr; Diproses &rarr; Selesai.</small>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Tetapkan Tingkat Keparahan</label>
+      <select id="modal-severity-select" class="form-control">
+        <option value="ringan">Ringan (Kerusakan minor)</option>
+        <option value="sedang">Sedang (Perlu penanganan terjadwal)</option>
+        <option value="berat">Berat (Mendesak / Berbahaya bagi keselamatan)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Catatan Perangkat Desa (Opsional)</label>
+      <textarea id="modal-note" class="form-control" rows="3" placeholder="Contoh: Tim lapangan sudah mengecek lokasi dan material telah disiapkan."></textarea>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+      <button type="button" class="btn btn-secondary" onclick="closeUpdateModal()">Batal</button>
+      <button type="button" class="btn btn-primary" onclick="submitStatusUpdate()">Simpan Perubahan</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let dashMap = null;
+let dashReportsLayer = null;
+let dashKdeLayer = null;
+let dashDbscanLayer = null;
+let dashGetisLayer = null;
+let dashBoundaryLayer = null;
+
+document.addEventListener("DOMContentLoaded", function() {
+  loadSummary();
+  loadPriorities();
+  loadReportsTable();
+});
+
+function switchTab(tab, el) {
+  document.querySelectorAll(".sidebar-link").forEach(l => l.classList.remove("active"));
+  el.classList.add("active");
+
+  document.querySelectorAll(".tab-pane").forEach(pane => pane.style.display = "none");
+  const target = document.getElementById(`section-${tab}`);
+  if (target) target.style.display = "block";
+
+  if (tab === "spatial") {
+    if (!dashMap) {
+      setTimeout(initDashMap, 100);
+    } else {
+      setTimeout(() => dashMap.invalidateSize(), 200);
+    }
+  }
+}
+
+// 1. KPI Summary
+function loadSummary() {
+  fetch("/api/dashboard/summary")
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById("kpi-total").innerText = data.total_reports || 0;
+      document.getElementById("kpi-menunggu").innerText = data.by_status.MENUNGGU_VERIFIKASI ? data.by_status.MENUNGGU_VERIFIKASI.count : 0;
+      document.getElementById("kpi-diproses").innerText = data.by_status.DIPROSES ? data.by_status.DIPROSES.count : 0;
+      document.getElementById("kpi-selesai").innerText = data.by_status.SELESAI ? data.by_status.SELESAI.count : 0;
+    })
+    .catch(err => console.error("Summary error:", err));
+}
+
+// 2. Priority List (Top 10)
+function loadPriorities() {
+  const tbody = document.getElementById("priority-table-body");
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Menghitung skor prioritas...</td></tr>`;
+
+  fetch("/api/dashboard/priorities")
+    .then(r => r.json())
+    .then(data => {
+      if (!data.top_priorities || data.top_priorities.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-muted);">Tidak ada laporan aktif untuk dihitung prioritasnya.</td></tr>`;
+        return;
+      }
+
+      let html = "";
+      data.top_priorities.forEach((item, idx) => {
+        const r = item.report;
+        const comp = item.components;
+        const rankColor = idx === 0 ? "#ef4444" : (idx <= 2 ? "#f97316" : "#64748b");
+        
+        html += `
+          <tr>
+            <td>
+              <span style="display: inline-block; width: 28px; height: 28px; border-radius: 50%; background: ${rankColor}; color: white; font-weight: 800; text-align: center; line-height: 28px; font-size: 0.85rem;">
+                #${idx + 1}
+              </span>
+            </td>
+            <td>
+              <div class="priority-score-badge" style="width: 44px; height: 44px; font-size: 0.95rem;">
+                ${(item.priority_score * 100).toFixed(0)}
+              </div>
+            </td>
+            <td>
+              <div style="font-weight: 700; color: var(--secondary);">#LB-${String(r.id).padStart(4, "0")}</div>
+              ${getFacilityBadge(r.facility_type ? r.facility_type.code : '', r.facility_type ? r.facility_type.name : '')}
+            </td>
+            <td style="max-width: 220px;">
+              <div style="font-size: 0.85rem; color: #334155;">${r.description}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+                ${getStatusBadge(r.status ? r.status.code : '', r.status ? r.status.name : '')}
+                ${getSeverityBadge(r.severity)}
+              </div>
+            </td>
+            <td>
+              <span class="badge badge-berat" style="font-size: 0.75rem;">${item.primary_reason}</span>
+            </td>
+            <td>
+              <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4;">
+                <div>Kep: <strong>${comp.severity_score}</strong> | Kepadatan: <strong>${comp.density_score}</strong></div>
+                <div>Risiko: <strong>${comp.safety_risk_score}</strong> | Usia: <strong>${comp.unhandled_duration_days}h</strong></div>
+              </div>
+            </td>
+            <td style="text-align: center;">
+              <a href="/dashboard/laporan/${r.id}" class="btn btn-secondary btn-sm" style="margin-bottom: 4px;">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Detail
+              </a>
+              <button class="btn btn-primary btn-sm" onclick="openUpdateModal(${r.id}, '${r.status ? r.status.code : ''}', '${r.severity || ''}')">
+                <i class="fa-solid fa-pen-to-square"></i> Update
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    })
+    .catch(err => {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger);">Gagal memuat daftar prioritas.</td></tr>`;
+    });
+}
+
+// 3. Reports Data Table
+function loadReportsTable() {
+  const tbody = document.getElementById("mgmt-reports-body");
+  tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Memuat laporan...</td></tr>`;
+
+  const fac = document.getElementById("mgmt-filter-fac").value;
+  const status = document.getElementById("mgmt-filter-status").value;
+
+  fetch(`/api/reports?facility_type=${fac}&status=${status}`)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.reports || data.reports.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-muted);">Tidak ada laporan yang cocok dengan filter.</td></tr>`;
+        return;
+      }
+
+      let html = "";
+      data.reports.forEach(r => {
+        const photo = r.photos && r.photos[0] ? r.photos[0] : null;
+        const ai = photo && photo.ai_predictions && photo.ai_predictions[0] ? photo.ai_predictions[0] : null;
+
+        html += `
+          <tr>
+            <td><strong>#LB-${String(r.id).padStart(4, "0")}</strong></td>
+            <td>
+              ${r.photo_url ? `<img src="${r.photo_url}" style="width: 60px; height: 50px; object-fit: cover; border-radius: 6px;">` : '-'}
+            </td>
+            <td>${getFacilityBadge(r.facility_type ? r.facility_type.code : '', r.facility_type ? r.facility_type.name : '')}</td>
+            <td>
+              ${ai ? `<span style="font-size: 0.8rem; font-weight: 700; color: #1e40af;"><i class="fa-solid fa-microchip"></i> ${ai.predicted_class} (${Math.round(ai.confidence*100)}%)</span>` : '<span style="color: #94a3b8;">-</span>'}
+            </td>
+            <td>${getStatusBadge(r.status ? r.status.code : '', r.status ? r.status.name : '')}</td>
+            <td>${getSeverityBadge(r.severity)}</td>
+            <td style="font-size: 0.8rem; color: var(--text-muted);">${formatDate(r.created_at)}</td>
+            <td style="text-align: center;">
+              <a href="/dashboard/laporan/${r.id}" class="btn btn-secondary btn-sm" title="Lihat Detail & Peta">
+                <i class="fa-solid fa-eye"></i>
+              </a>
+              <button class="btn btn-primary btn-sm" onclick="openUpdateModal(${r.id}, '${r.status ? r.status.code : ''}', '${r.severity || ''}')" title="Ubah Status">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    })
+    .catch(err => {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--danger);">Gagal memuat data laporan.</td></tr>`;
+    });
+}
+
+// 4. Spatial Map (KDE, DBSCAN, Getis-Ord Gi*)
+function initDashMap() {
+  dashMap = L.map("dash-map").setView([-7.4245, 109.3365], 15);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(dashMap);
+
+  // Boundary
+  fetch("/api/map/boundary")
+    .then(r => r.json())
+    .then(data => {
+      dashBoundaryLayer = L.geoJSON(data, {
+        style: { color: "#059669", weight: 3, dashArray: "5, 5", fillColor: "#10b981", fillOpacity: 0.05 }
+      }).addTo(dashMap);
+      dashMap.fitBounds(dashBoundaryLayer.getBounds(), { padding: [30, 30] });
+    });
+
+  dashReportsLayer = L.layerGroup().addTo(dashMap);
+  dashKdeLayer = L.layerGroup();
+  dashDbscanLayer = L.layerGroup();
+  dashGetisLayer = L.layerGroup();
+
+  // Load Report Points
+  fetch("/api/map/reports")
+    .then(r => r.json())
+    .then(data => {
+      data.features.forEach(f => {
+        const c = f.geometry.coordinates;
+        const p = f.properties;
+        const marker = L.circleMarker([c[1], c[0]], {
+          radius: 7,
+          fillColor: p.facility_code === "JALAN" ? "#f97316" : (p.facility_code === "PJU" ? "#eab308" : "#06b6d4"),
+          color: "#ffffff",
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.9
+        });
+        marker.bindPopup(`<strong>#LB-${String(p.id).padStart(4, "0")}</strong><br>${p.facility_type}<br>${p.description}`);
+        dashReportsLayer.addLayer(marker);
+      });
+    });
+
+  // Layer Toggles
+  document.getElementById("dash-toggle-markers").addEventListener("change", function(e) {
+    if (e.target.checked) dashMap.addLayer(dashReportsLayer);
+    else dashMap.removeLayer(dashReportsLayer);
+  });
+
+  document.getElementById("dash-toggle-kde").addEventListener("change", function(e) {
+    if (e.target.checked) {
+      loadKdeLayer();
+    } else {
+      dashMap.removeLayer(dashKdeLayer);
+    }
+  });
+
+  document.getElementById("dash-toggle-dbscan").addEventListener("change", function(e) {
+    if (e.target.checked) {
+      loadDbscanLayer();
+    } else {
+      dashMap.removeLayer(dashDbscanLayer);
+    }
+  });
+
+  document.getElementById("dash-toggle-getis").addEventListener("change", function(e) {
+    if (e.target.checked) {
+      loadGetisLayer();
+    } else {
+      dashMap.removeLayer(dashGetisLayer);
+    }
+  });
+}
+
+function loadKdeLayer() {
+  dashKdeLayer.clearLayers();
+  showToast("Menghitung Kernel Density Estimation (KDE)...", "info");
+
+  fetch("/api/map/heatmap?bandwidth=100")
+    .then(r => r.json())
+    .then(data => {
+      data.features.forEach(f => {
+        const c = f.geometry.coordinates;
+        const dens = f.properties.density; // 0 to 1
+        
+        // Color gradient: yellow -> orange -> red
+        let color = "#fef08a";
+        if (dens > 0.75) color = "#b91c1c";
+        else if (dens > 0.5) color = "#ea580c";
+        else if (dens > 0.25) color = "#f59e0b";
+
+        const circle = L.circle([c[1], c[0]], {
+          radius: 35,
+          fillColor: color,
+          color: "transparent",
+          fillOpacity: dens * 0.5 + 0.1
+        });
+        dashKdeLayer.addLayer(circle);
+      });
+      dashMap.addLayer(dashKdeLayer);
+      showToast("Peta Panas KDE ditampilkan.", "success");
+    });
+}
+
+function loadDbscanLayer() {
+  dashDbscanLayer.clearLayers();
+  showToast("Menjalankan klasterisasi spasial DBSCAN...", "info");
+
+  const colors = ["#2563eb", "#9333ea", "#16a34a", "#dc2626", "#0891b2"];
+
+  fetch("/api/map/clusters?eps=50&min_pts=3")
+    .then(r => r.json())
+    .then(data => {
+      data.features.forEach(f => {
+        const c = f.geometry.coordinates;
+        const p = f.properties;
+        const isNoise = p.is_noise;
+        const clColor = isNoise ? "#94a3b8" : colors[p.cluster_id % colors.length];
+
+        const marker = L.circleMarker([c[1], c[0]], {
+          radius: isNoise ? 6 : 10,
+          fillColor: clColor,
+          color: "white",
+          weight: 2,
+          fillOpacity: 0.85
+        });
+        marker.bindPopup(`<strong>Laporan #${p.report_id}</strong><br>Klaster DBSCAN: ${isNoise ? 'Pencilan (Noise)' : 'Klaster #' + (p.cluster_id + 1)}<br>Ukuran Klaster: ${p.cluster_size} titik`);
+        dashDbscanLayer.addLayer(marker);
+      });
+      dashMap.addLayer(dashDbscanLayer);
+      showToast(`Ditemukan ${data.total_clusters} klaster kepadatan tinggi.`, "success");
+    });
+}
+
+function loadGetisLayer() {
+  dashGetisLayer.clearLayers();
+  showToast("Menghitung statistik Getis-Ord Gi*...", "info");
+
+  fetch("/api/map/hotspots?threshold=150")
+    .then(r => r.json())
+    .then(data => {
+      data.features.forEach(f => {
+        const c = f.geometry.coordinates;
+        const p = f.properties;
+        
+        let color = "#94a3b8";
+        if (p.is_significant) {
+          color = p.z_score > 0 ? "#dc2626" : "#2563eb"; // Hotspot vs Coldspot
+        }
+
+        const marker = L.circleMarker([c[1], c[0]], {
+          radius: p.is_significant ? 12 : 7,
+          fillColor: color,
+          color: "white",
+          weight: 2,
+          fillOpacity: 0.9
+        });
+        marker.bindPopup(`<strong>Getis-Ord Gi*</strong><br>${p.hotspot_type}<br>Z-Score: ${p.z_score}<br>p-value: ${p.p_value}`);
+        dashGetisLayer.addLayer(marker);
+      });
+      dashMap.addLayer(dashGetisLayer);
+      showToast(`Statistik Getis-Ord Gi* dimuat (${data.significant_count} titik signifikan).`, "success");
+    });
+}
+
+// 5. Update Status Modal
+function openUpdateModal(reportId, currentStatus, currentSeverity) {
+  document.getElementById("modal-report-id").value = reportId;
+  const statSelect = document.getElementById("modal-status-select");
+  const sevSelect = document.getElementById("modal-severity-select");
+  if (currentSeverity) sevSelect.value = currentSeverity;
+
+  // Set appropriate next status option
+  if (currentStatus === "MENUNGGU_VERIFIKASI") statSelect.value = "DIVERIFIKASI";
+  else if (currentStatus === "DIVERIFIKASI") statSelect.value = "DIPROSES";
+  else if (currentStatus === "DIPROSES") statSelect.value = "SELESAI";
+
+  document.getElementById("update-modal").style.display = "flex";
+}
+
+function closeUpdateModal() {
+  document.getElementById("update-modal").style.display = "none";
+}
+
+function submitStatusUpdate() {
+  const id = document.getElementById("modal-report-id").value;
+  const status = document.getElementById("modal-status-select").value;
+  const severity = document.getElementById("modal-severity-select").value;
+  const note = document.getElementById("modal-note").value.trim();
+
+  // 1. Update status
+  fetch(`/api/reports/${id}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status: status, note: note })
+  })
+  .then(r => {
+    if (!r.ok) {
+      return r.json().then(err => { throw new Error(err.error || "Gagal memperbarui status."); });
+    }
+    return r.json();
+  })
+  .then(() => {
+    // 2. Update severity
+    return fetch(`/api/reports/${id}/severity`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ severity: severity })
+    });
+  })
+  .then(() => {
+    showToast("Status & keparahan berhasil diperbarui!", "success");
+    closeUpdateModal();
+    loadSummary();
+    loadPriorities();
+    loadReportsTable();
+  })
+  .catch(err => {
+    showToast(err.message, "error");
+  });
+}
+</script>
+{% endblock %}
