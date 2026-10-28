@@ -455,7 +455,16 @@ function initDashMap() {
           opacity: 1,
           fillOpacity: 0.9
         });
-        marker.bindPopup(`<strong>#LB-${String(p.id).padStart(4, "0")}</strong><br>${p.facility_type}<br>${p.description}`);
+        const popupContent = renderReportPopup(p, true);
+        marker.bindPopup(popupContent, {
+          className: "custom-report-popup",
+          maxWidth: 290,
+          minWidth: 280,
+          closeButton: true,
+          autoPan: true,
+          autoPanPadding: [20, 20],
+          offset: [0, -6]
+        });
         dashReportsLayer.addLayer(marker);
       });
     });
