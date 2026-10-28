@@ -7,12 +7,12 @@ function showToast(message, type = "info") {
     container.id = "toast-container";
     document.body.appendChild(container);
   }
-  
+
   const toast = document.createElement("div");
   toast.className = `toast toast-${type}`;
   toast.innerHTML = `<span>${message}</span>`;
   container.appendChild(toast);
-  
+
   setTimeout(() => {
     toast.style.opacity = "0";
     toast.style.transform = "translateX(100%)";
@@ -21,17 +21,39 @@ function showToast(message, type = "info") {
   }, 4000);
 }
 
-// Format ISO date to Indonesian readable format
+// Format ISO date to Indonesian readable format in WIB (UTC+7)
 function formatDate(dateStr) {
-  if (!dateStr) return "-";
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("id-ID", {
+  if (!dateStr || dateStr === "-") return "-";
+  if (typeof dateStr === "string" && dateStr.includes("WIB")) return dateStr;
+
+  let d;
+  if (typeof dateStr === "string") {
+    // If it's a legacy GMT string like "28 Oct 2026, 05:40"
+    if (/^\d{1,2}\s+[A-Za-z]{3}\s+\d{4},\s+\d{2}:\d{2}$/.test(dateStr.trim())) {
+      const parsedUtc = new Date(dateStr.trim() + " UTC");
+      d = !isNaN(parsedUtc.getTime()) ? parsedUtc : new Date(dateStr);
+    } else if (dateStr.includes("T") && !dateStr.includes("Z") && !dateStr.includes("+")) {
+      d = new Date(dateStr + "Z");
+    } else {
+      d = new Date(dateStr);
+    }
+  } else {
+    d = new Date(dateStr);
+  }
+
+  if (isNaN(d.getTime())) return dateStr;
+
+  const formatted = d.toLocaleDateString("id-ID", {
+    timeZone: "Asia/Jakarta",
     day: "numeric",
     month: "short",
     year: "numeric",
     hour: "2-digit",
-    minute: "2-digit"
+    minute: "2-digit",
+    hourCycle: "h23"
   });
+
+  return `${formatted.replace(/\./g, ":")} WIB`;
 }
 
 // Get badge markup
@@ -79,7 +101,7 @@ function renderReportPopup(props, isDashboard = false) {
   let facLabel = "Jalan";
   let facClass = "tag-fac-jalan";
   let bannerClass = "banner-jalan";
-  
+
   if (facCode === "PJU" || (props.facility_type && props.facility_type.toLowerCase().includes("pju"))) {
     facIcon = "fa-lightbulb";
     facLabel = "Lampu PJU";
@@ -125,7 +147,7 @@ function renderReportPopup(props, isDashboard = false) {
 
   const safeDesc = escapeHtml(props.description || "Laporan kerusakan fasilitas desa.");
   const ticketId = `#LB-${String(props.id).padStart(4, '0')}`;
-  const createdAt = props.created_at || "-";
+  const createdAt = formatDate(props.created_at);
   const actionUrl = isDashboard ? `/dashboard/laporan/${props.id}` : `/laporan/${props.id}`;
   const actionLabel = isDashboard ? "Kelola Laporan" : "Lihat Status Penanganan";
 

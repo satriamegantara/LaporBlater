@@ -1,3 +1,4 @@
+import datetime
 from flask import Blueprint, jsonify, request
 from models import db_session, Report, FacilityType, ReportStatus
 from services.spatial_service import (
@@ -5,6 +6,16 @@ from services.spatial_service import (
     compute_kde, compute_dbscan, compute_getis_ord
 )
 from services.auth_service import roles_required
+
+MONTHS_ID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
+
+def format_wib(dt):
+    """Format UTC datetime to Indonesian WIB (UTC+7) readable string."""
+    if not dt:
+        return None
+    wib_dt = dt + datetime.timedelta(hours=7)
+    month = MONTHS_ID[wib_dt.month - 1]
+    return f"{wib_dt.day:02d} {month} {wib_dt.year}, {wib_dt.strftime('%H:%M')} WIB"
 
 map_bp = Blueprint("map_bp", __name__, url_prefix="/api/map")
 
@@ -61,7 +72,7 @@ def get_map_reports():
                 "severity": r.severity or "Belum Ditentukan",
                 "description": r.description[:120] + "..." if len(r.description) > 120 else r.description,
                 "photo_url": f"/uploads/photos/public/{photo.public_path}" if photo else None,
-                "created_at": r.created_at.strftime("%d %b %Y, %H:%M") if r.created_at else None
+                "created_at": format_wib(r.created_at) if r.created_at else None
             }
         })
         
