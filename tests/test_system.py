@@ -240,3 +240,16 @@ def test_check_status_valid_and_invalid(client):
     # Invalid ID
     res_invalid = client.get("/api/reports/999999/status")
     assert res_invalid.status_code == 404
+
+# --- Test Logout Redirection ---
+def test_logout_redirects_to_login(client):
+    # Test GET /logout
+    res = client.get("/logout")
+    assert res.status_code == 302
+    assert "/login" in res.headers["Location"]
+
+    # Test GET /api/auth/logout redirects to /login for browser requests
+    res_api = client.get("/api/auth/logout")
+    assert res_api.status_code == 302
+    assert "/login" in res_api.headers["Location"]
+

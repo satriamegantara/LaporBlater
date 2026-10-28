@@ -59,3 +59,10 @@ def dashboard_settings():
     if session.get("user_role") != "admin":
         return redirect(url_for("web_bp.dashboard_page"))
     return render_template("dashboard_settings.html")
+
+
+@web_bp.route("/logout")
+def logout():
+    """Clear session and redirect to login page."""
+    session.clear()
+    return redirect(url_for("web_bp.login_page"))

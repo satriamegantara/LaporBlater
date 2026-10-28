@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, session, redirect, url_for
 from models import db_session, User
 from services.auth_service import generate_token, get_current_user, login_required
 
@@ -39,6 +39,9 @@ def login():
 @auth_bp.route("/logout", methods=["POST", "GET"])
 def logout():
     session.clear()
+    # Redirect to login page if called via browser link (GET) or text/html request
+    if request.method == "GET" or "application/json" not in request.headers.get("Accept", ""):
+        return redirect(url_for("web_bp.login_page"))
     return jsonify({"message": "Berhasil logout."}), 200
 
 

@@ -43,7 +43,7 @@
         
         {% if session.get('user_id') %}
           <li><a href="/dashboard" class="nav-link {% if 'dashboard' in request.path %}active{% endif %}"><i class="fa-solid fa-chart-pie"></i> Dasbor Pengelola</a></li>
-          <li><a href="/api/auth/logout" class="btn btn-secondary btn-sm"><i class="fa-solid fa-right-from-bracket"></i> Keluar</a></li>
+          <li><a href="/logout" onclick="localStorage.removeItem('laporblater_token');" class="btn btn-secondary btn-sm"><i class="fa-solid fa-right-from-bracket"></i> Keluar</a></li>
         {% else %}
           <li><a href="/login" class="btn btn-secondary btn-sm"><i class="fa-solid fa-user-shield"></i> Login Petugas</a></li>
         {% endif %}
