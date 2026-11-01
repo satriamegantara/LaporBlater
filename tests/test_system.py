@@ -253,3 +253,26 @@ def test_logout_redirects_to_login(client):
     assert res_api.status_code == 302
     assert "/login" in res_api.headers["Location"]
 
+
+# --- Test Scenario 11: Web Pages Rendering (Header, Footer, Panduan) ---
+def test_web_routes_pages(client):
+    for path in ["/", "/lapor", "/cek-status", "/panduan", "/login"]:
+        res = client.get(path)
+        assert res.status_code == 200
+        html = res.get_data(as_text=True)
+        # Verify header presence
+        assert "LaporBlater" in html
+        assert "navbar" in html
+        # Verify footer presence
+        assert "site-footer" in html
+        assert "Pemerintah Desa Blater" in html
+
+    # Specifically check /panduan contains the guide
+    res_panduan = client.get("/panduan")
+    assert res_panduan.status_code == 200
+    p_html = res_panduan.get_data(as_text=True)
+    assert "Panduan" in p_html
+    assert "Alur" in p_html
+    assert "FAQ" in p_html
+
+

@@ -10,7 +10,10 @@ from config import Config
 Base = declarative_base()
 
 # Database engine & session factory
-engine = create_engine(Config.DATABASE_URL, pool_pre_ping=True)
+engine_kwargs = {"pool_pre_ping": True}
+if Config.DATABASE_URL.startswith("sqlite"):
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+engine = create_engine(Config.DATABASE_URL, **engine_kwargs)
 db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
 Base.query = db_session.query_property()
 

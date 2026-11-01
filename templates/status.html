@@ -31,7 +31,15 @@
           <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">ID LAPORAN:</span>
           <h2 style="font-size: 1.75rem; font-weight: 800; color: var(--primary);" id="detail-id">#LB-0000</h2>
         </div>
-        <div style="display: flex; gap: 0.5rem; align-items: center;" id="detail-badges"></div>
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+          <div id="detail-badges" style="display: flex; gap: 0.5rem;"></div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="shareToWhatsApp()" title="Bagikan Tiket ke WhatsApp">
+            <i class="fa-brands fa-whatsapp" style="color: #16a34a;"></i> Bagikan WA
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="window.print()" title="Cetak Bukti Laporan">
+            <i class="fa-solid fa-print"></i> Cetak
+          </button>
+        </div>
       </div>
 
       <!-- Timeline Progression -->
@@ -195,6 +203,13 @@ function updateTimelineStepper(currentCode) {
       }
     }
   });
+}
+function shareToWhatsApp() {
+  const ticket = document.getElementById("detail-id").innerText;
+  const desc = document.getElementById("detail-description").innerText;
+  const url = window.location.href;
+  const text = `Halo, berikut rincian tiket pengaduan fasilitas umum Desa Blater:\nNomor: *${ticket}*\nKeterangan: ${desc.substring(0, 80)}...\nPantau perkembangan perbaikan di: ${url}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
 }
 </script>
 {% endblock %}

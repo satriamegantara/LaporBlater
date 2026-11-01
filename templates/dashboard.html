@@ -250,6 +250,8 @@
 </div>
 {% endblock %}
 
+{% block footer %}{% endblock %}
+
 {% block extra_scripts %}
 <script>
 let dashMap = null;
@@ -418,11 +420,17 @@ function loadReportsTable() {
 
 // 4. Spatial Map (KDE, DBSCAN, Getis-Ord Gi*)
 function initDashMap() {
-  dashMap = L.map("dash-map").setView([-7.4245, 109.3365], 15);
+  const blaterBounds = L.latLngBounds([-7.4365, 109.3200], [-7.4135, 109.3600]);
+  dashMap = L.map("dash-map", {
+    maxBounds: blaterBounds,
+    maxBoundsViscosity: 1.0,
+    minZoom: 14,
+    maxZoom: 19
+  }).setView([-7.4245, 109.3365], 15.5);
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
-    attribution: '&copy; OpenStreetMap'
+    attribution: '&copy; OpenStreetMap | Desa Blater'
   }).addTo(dashMap);
 
   // Boundary
@@ -432,7 +440,12 @@ function initDashMap() {
       dashBoundaryLayer = L.geoJSON(data, {
         style: { color: "#059669", weight: 3, dashArray: "5, 5", fillColor: "#10b981", fillOpacity: 0.05 }
       }).addTo(dashMap);
+      const tightBounds = dashBoundaryLayer.getBounds().pad(0.05);
+      dashMap.setMaxBounds(tightBounds);
+      dashMap.options.maxBoundsViscosity = 1.0;
       dashMap.fitBounds(dashBoundaryLayer.getBounds(), { padding: [30, 30] });
+      const minZ = dashMap.getBoundsZoom(tightBounds);
+      dashMap.setMinZoom(minZ >= 13 ? minZ : 14);
     });
 
   dashReportsLayer = L.layerGroup().addTo(dashMap);

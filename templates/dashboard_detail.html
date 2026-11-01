@@ -162,6 +162,8 @@
 </div>
 {% endblock %}
 
+{% block footer %}{% endblock %}
+
 {% block extra_scripts %}
 <script>
 const reportId = {{ report_id }};
@@ -242,7 +244,14 @@ function loadReportDetail() {
 function initMiniMap(lat, lng) {
   if (miniMap) return;
 
-  miniMap = L.map("mini-map", { zoomControl: false }).setView([lat, lng], 16);
+  const blaterBounds = L.latLngBounds([-7.4365, 109.3200], [-7.4135, 109.3600]);
+  miniMap = L.map("mini-map", {
+    zoomControl: false,
+    maxBounds: blaterBounds,
+    maxBoundsViscosity: 1.0,
+    minZoom: 14,
+    maxZoom: 19
+  }).setView([lat, lng], 16);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(miniMap);
   L.control.zoom({ position: "bottomright" }).addTo(miniMap);
 

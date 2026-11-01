@@ -3,125 +3,237 @@
 {% block title %}Peta Pengaduan Kerusakan Fasilitas Desa Blater - LaporBlater{% endblock %}
 
 {% block content %}
-<div class="map-viewport">
-  <div id="map"></div>
-
-  <!-- Floating Filter & Stats Panel -->
-  <div class="map-floating-panel">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-      <h2 style="font-size: 1.1rem; font-weight: 800; color: var(--secondary);">
-        <i class="fa-solid fa-map-location-dot" style="color: var(--primary);"></i> Peta Desa Blater
-      </h2>
-      <span class="badge badge-menunggu" id="report-count-badge">Memuat...</span>
-    </div>
-    
-    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
-      Sistem pemantauan spasial kerusakan jalan, penerangan (PJU), dan saluran drainase di wilayah Desa Blater.
+<!-- Minimalist Hero Section (White Background, Clean Typography) -->
+<section style="padding: 4rem 2rem 3rem; background: #ffffff;">
+  <div style="max-width: 1200px; margin: 0 auto;">
+    <span class="section-tag">Layanan Pengaduan Desa</span>
+    <h1 class="section-title">Pemantauan Kerusakan Fasilitas Desa Blater</h1>
+    <p class="section-subtitle">
+      Sistem informasi geospasial untuk memantau dan melaporkan kerusakan jalan, penerangan jalan umum (PJU), dan saluran drainase di wilayah administratif Desa Blater.
     </p>
 
-    <!-- Filter by Facility -->
-    <div style="font-size: 0.8rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.25rem;">
-      Jenis Fasilitas:
-    </div>
-    <div class="filter-group" id="filter-facility">
-      <button class="filter-btn active" data-fac="">Semua</button>
-      <button class="filter-btn" data-fac="JALAN"><i class="fa-solid fa-road" style="color: var(--accent-jalan);"></i> Jalan</button>
-      <button class="filter-btn" data-fac="PJU"><i class="fa-solid fa-lightbulb" style="color: var(--accent-pju);"></i> PJU</button>
-      <button class="filter-btn" data-fac="DRAINASE"><i class="fa-solid fa-water" style="color: var(--accent-drainase);"></i> Drainase</button>
+    <div style="display: flex; gap: 0.75rem; margin-top: 1.75rem; flex-wrap: wrap;">
+      <a href="/lapor" class="btn btn-primary" style="padding: 0.75rem 1.5rem; font-size: 0.95rem;">
+        <i class="fa-solid fa-camera"></i> Buat Laporan Kerusakan
+      </a>
+      <a href="/cek-status" class="btn btn-secondary" style="padding: 0.75rem 1.5rem; font-size: 0.95rem;">
+        <i class="fa-solid fa-magnifying-glass"></i> Cek Status Laporan
+      </a>
     </div>
 
-    <!-- Filter by Status -->
-    <div style="font-size: 0.8rem; font-weight: 700; color: var(--secondary); margin-top: 0.75rem; margin-bottom: 0.25rem;">
-      Status Penanganan:
-    </div>
-    <div class="filter-group" id="filter-status">
-      <button class="filter-btn active" data-status="">Semua</button>
-      <button class="filter-btn" data-status="MENUNGGU_VERIFIKASI">Menunggu</button>
-      <button class="filter-btn" data-status="DIPROSES">Diproses</button>
-      <button class="filter-btn" data-status="SELESAI">Selesai</button>
-    </div>
+    <!-- 3 Light Grey Cards (Matching Reference Image 1) -->
+    <div class="cards-grid-3">
+      <div class="card-grey">
+        <div class="card-grey-icon"><i class="fa-solid fa-road"></i></div>
+        <h3 class="card-grey-title">Kerusakan Jalan Desa</h3>
+        <p class="card-grey-desc">
+          Pelaporan jalan aspal berlubang, jalan rabat beton patah, atau jalan amblas di seluruh ruas jalan Desa Blater.
+        </p>
+      </div>
 
-    <!-- Layer Switcher Checkboxes -->
-    <div style="font-size: 0.8rem; font-weight: 700; color: var(--secondary); margin-top: 0.85rem; margin-bottom: 0.4rem;">
-      Layer Peta:
-    </div>
-    <div style="display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.8rem; color: var(--text-muted);">
-      <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-        <input type="checkbox" id="layer-boundary-toggle" checked> Batas Desa Blater
-      </label>
-      <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-        <input type="checkbox" id="layer-roads-toggle" checked> Jaringan Jalan Desa
-      </label>
-      <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-        <input type="checkbox" id="layer-reports-toggle" checked> Titik Pengaduan Kerusakan
-      </label>
+      <div class="card-grey">
+        <div class="card-grey-icon"><i class="fa-solid fa-lightbulb"></i></div>
+        <h3 class="card-grey-title">Penerangan Jalan (PJU)</h3>
+        <p class="card-grey-desc">
+          Pelaporan lampu penerangan jalan yang padam, tiang miring/rusak, atau kabel menjuntai yang membahayakan warga.
+        </p>
+      </div>
+
+      <div class="card-grey">
+        <div class="card-grey-icon"><i class="fa-solid fa-water"></i></div>
+        <h3 class="card-grey-title">Saluran Drainase & Parit</h3>
+        <p class="card-grey-desc">
+          Pelaporan saluran drainase tersumbat sampah, tanggul parit ambrol, atau luapan air yang menggenangi pemukiman.
+        </p>
+      </div>
     </div>
   </div>
+</section>
 
-  <!-- Floating Action Buttons -->
-  <div class="map-floating-bottom">
-    <a href="/lapor" class="btn btn-primary btn-lg" style="box-shadow: 0 10px 25px rgba(37,99,235,0.4);">
-      <i class="fa-solid fa-camera"></i> Buat Laporan Kerusakan
-    </a>
-    <a href="/cek-status" class="btn btn-secondary btn-lg" style="box-shadow: var(--shadow-lg);">
-      <i class="fa-solid fa-clock-rotate-left"></i> Cek Status
-    </a>
+<!-- Interactive Map Section (Clean Frame, Bounded to Desa Blater) -->
+<section style="padding: 1rem 2rem 4rem; background: #ffffff;">
+  <div style="max-width: 1200px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <span class="section-tag">Peta Geospasial</span>
+        <h2 style="font-size: 1.75rem; font-weight: 800; color: #111827; margin: 0;">Peta Sebaran Laporan Kerusakan</h2>
+        <p style="font-size: 0.9rem; color: #6b7280; margin-top: 0.25rem;">
+          Peta dibatasi khusus di dalam batas administratif Desa Blater.
+        </p>
+      </div>
+
+      <!-- Quick Toolbar -->
+      <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <!-- Basemap Switcher -->
+        <div class="map-quick-toolbar">
+          <button type="button" id="btn-basemap-street" class="active" onclick="switchBasemap('street')">
+            Peta Jalan
+          </button>
+          <button type="button" id="btn-basemap-satellite" onclick="switchBasemap('satellite')">
+            Citra Satelit
+          </button>
+        </div>
+
+        <!-- Landmark Jump -->
+        <div class="map-quick-toolbar">
+          <select id="select-landmark" onchange="jumpToLandmark(this.value)" aria-label="Fokus Lokasi">
+            <option value="center">Fokus Wilayah Blater</option>
+            <option value="balai_desa">Balai Desa Blater</option>
+            <option value="unsoed">Kampus FT Unsoed</option>
+            <option value="dusun1">Dusun I</option>
+            <option value="dusun2">Dusun II</option>
+            <option value="dusun3">Dusun III</option>
+          </select>
+        </div>
+
+        <button type="button" class="btn btn-secondary btn-sm" onclick="resetMapView()" title="Reset Tampilan Peta">
+          <i class="fa-solid fa-arrows-rotate"></i> Reset
+        </button>
+      </div>
+    </div>
+
+    <!-- Clean Map Container -->
+    <div class="clean-map-container" style="position: relative;">
+      <div id="map" style="width: 100%; height: 580px;"></div>
+
+      <!-- Floating Filter Panel on Map -->
+      <div class="map-floating-panel" style="background: rgba(255, 255, 255, 0.95); border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <h3 style="font-size: 0.95rem; font-weight: 700; color: #111827; margin: 0;">Filter Fasilitas</h3>
+          <span class="badge" id="report-count-badge" style="background: #f3f4f6; color: #374151; font-size: 0.75rem;">Memuat...</span>
+        </div>
+
+        <!-- Filter by Facility -->
+        <div class="filter-group" id="filter-facility">
+          <button class="filter-btn active" data-fac="">Semua</button>
+          <button class="filter-btn" data-fac="JALAN">Jalan</button>
+          <button class="filter-btn" data-fac="PJU">PJU</button>
+          <button class="filter-btn" data-fac="DRAINASE">Drainase</button>
+        </div>
+
+        <!-- Filter by Status -->
+        <div style="font-size: 0.75rem; font-weight: 600; color: #6b7280; margin-top: 0.65rem; margin-bottom: 0.25rem;">
+          Status:
+        </div>
+        <div class="filter-group" id="filter-status">
+          <button class="filter-btn active" data-status="">Semua</button>
+          <button class="filter-btn" data-status="MENUNGGU_VERIFIKASI">Menunggu</button>
+          <button class="filter-btn" data-status="DIPROSES">Diproses</button>
+          <button class="filter-btn" data-status="SELESAI">Selesai</button>
+        </div>
+
+        <!-- Layer Checkboxes -->
+        <div style="font-size: 0.75rem; font-weight: 600; color: #6b7280; margin-top: 0.75rem; margin-bottom: 0.35rem;">
+          Layer:
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem; color: #4b5563;">
+          <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+            <input type="checkbox" id="layer-boundary-toggle" checked> Batas Desa Blater
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+            <input type="checkbox" id="layer-roads-toggle" checked> Jalan Desa
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+            <input type="checkbox" id="layer-reports-toggle" checked> Titik Laporan Kerusakan
+          </label>
+        </div>
+      </div>
+    </div>
   </div>
-</div>
+</section>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
+let map = null;
+let streetTileLayer = null;
+let satelliteTileLayer = null;
+let currentBasemap = "street";
+let boundaryLayer = null;
+let roadsLayer = null;
+let reportsLayer = null;
+let blaterBounds = null;
+
+// Landmark coordinates in Desa Blater
+const BLATER_LANDMARKS = {
+  center: { coords: [-7.4245, 109.3365], zoom: 15.5 },
+  balai_desa: { coords: [-7.4245, 109.3365], zoom: 17 },
+  unsoed: { coords: [-7.4245, 109.3385], zoom: 17 },
+  dusun1: { coords: [-7.4228, 109.3340], zoom: 16.5 },
+  dusun2: { coords: [-7.4245, 109.3365], zoom: 16.5 },
+  dusun3: { coords: [-7.4280, 109.3355], zoom: 16.5 }
+};
+
 document.addEventListener("DOMContentLoaded", function() {
-  // Initialize Leaflet Map centered around Desa Blater
-  const map = L.map("map", {
-    zoomControl: false
-  }).setView([-7.4245, 109.3365], 15);
+  // 1. Strict Boundary of Desa Blater (Cannot be dragged outside)
+  const southWest = L.latLng(-7.4365, 109.3200);
+  const northEast = L.latLng(-7.4135, 109.3600);
+  blaterBounds = L.latLngBounds(southWest, northEast);
+
+  // Initialize Leaflet Map with STRICT maxBounds and maxBoundsViscosity: 1.0
+  map = L.map("map", {
+    zoomControl: false,
+    maxBounds: blaterBounds,
+    maxBoundsViscosity: 1.0, // HARD LOCK: Map cannot pan outside Desa Blater!
+    minZoom: 14,
+    maxZoom: 19
+  }).setView([-7.4245, 109.3365], 15.5);
   
   L.control.zoom({ position: "topright" }).addTo(map);
 
-  // OpenStreetMap Tile Layer
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  // 2. Basemap Layers
+  streetTileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> kontributor | LaporBlater'
+    attribution: '&copy; OpenStreetMap | Desa Blater'
   }).addTo(map);
 
-  let boundaryLayer = null;
-  let roadsLayer = null;
-  let reportsLayer = L.layerGroup().addTo(map);
+  satelliteTileLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+    maxZoom: 19,
+    attribution: 'Tiles &copy; Esri &mdash; Citra Satelit'
+  });
 
-  // 1. Load Desa Blater Boundary
+  reportsLayer = L.layerGroup().addTo(map);
+
+  // 3. Load Desa Blater Boundary GeoJSON
   fetch("/api/map/boundary")
     .then(r => r.json())
     .then(data => {
       boundaryLayer = L.geoJSON(data, {
         style: {
-          color: "#059669",
-          weight: 3,
-          dashArray: "6, 6",
-          fillColor: "#10b981",
-          fillOpacity: 0.08
+          color: "#111827",
+          weight: 2.5,
+          dashArray: "5, 5",
+          fillColor: "#000000",
+          fillOpacity: 0.04
         }
       }).addTo(map);
-      map.fitBounds(boundaryLayer.getBounds(), { padding: [40, 40] });
+
+      const geoBounds = boundaryLayer.getBounds().pad(0.05);
+      blaterBounds = geoBounds;
+      map.setMaxBounds(geoBounds);
+      map.options.maxBoundsViscosity = 1.0;
+      map.fitBounds(boundaryLayer.getBounds(), { padding: [25, 25] });
+
+      const fittedMinZoom = map.getBoundsZoom(geoBounds);
+      map.setMinZoom(fittedMinZoom >= 13 ? fittedMinZoom : 14);
     })
     .catch(err => console.error("Boundary error:", err));
 
-  // 2. Load Desa Blater Roads
+  // 4. Load Desa Blater Roads
   fetch("/api/map/roads")
     .then(r => r.json())
     .then(data => {
       roadsLayer = L.geoJSON(data, {
         style: {
-          color: "#f59e0b",
+          color: "#9ca3af",
           weight: 2.5,
-          opacity: 0.7
+          opacity: 0.8
         }
       }).addTo(map);
     })
     .catch(err => console.error("Roads error:", err));
 
-  // Function to create custom markers
+  // Marker icon builder
   function createCustomIcon(facCode) {
     let pinClass = "pin-jalan";
     let iconClass = "fa-road";
@@ -142,7 +254,7 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  // 3. Load Reports
+  // 5. Load and filter reports
   let activeFacFilter = "";
   let activeStatusFilter = "";
 
@@ -153,10 +265,11 @@ document.addEventListener("DOMContentLoaded", function() {
     fetch(url)
       .then(r => r.json())
       .then(data => {
-        document.getElementById("report-count-badge").innerText = `${data.count} Laporan`;
+        const badge = document.getElementById("report-count-badge");
+        if (badge) badge.innerText = `${data.count} Laporan`;
         
         data.features.forEach(feat => {
-          const coords = feat.geometry.coordinates; // [lng, lat]
+          const coords = feat.geometry.coordinates;
           const props = feat.properties;
           
           const marker = L.marker([coords[1], coords[0]], {
@@ -182,7 +295,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
   loadReports();
 
-  // Filter Event Listeners
+  // Filter Click Handlers
   document.querySelectorAll("#filter-facility .filter-btn").forEach(btn => {
     btn.addEventListener("click", function() {
       document.querySelectorAll("#filter-facility .filter-btn").forEach(b => b.classList.remove("active"));
@@ -217,5 +330,45 @@ document.addEventListener("DOMContentLoaded", function() {
     else map.removeLayer(reportsLayer);
   });
 });
+
+// Basemap Switcher
+function switchBasemap(type) {
+  if (!map) return;
+  const btnStreet = document.getElementById("btn-basemap-street");
+  const btnSat = document.getElementById("btn-basemap-satellite");
+
+  if (type === "satellite") {
+    map.removeLayer(streetTileLayer);
+    satelliteTileLayer.addTo(map);
+    currentBasemap = "satellite";
+    btnStreet.classList.remove("active");
+    btnSat.classList.add("active");
+  } else {
+    map.removeLayer(satelliteTileLayer);
+    streetTileLayer.addTo(map);
+    currentBasemap = "street";
+    btnSat.classList.remove("active");
+    btnStreet.classList.add("active");
+  }
+}
+
+// Landmark Jump
+function jumpToLandmark(key) {
+  if (!map || !BLATER_LANDMARKS[key]) return;
+  const item = BLATER_LANDMARKS[key];
+  map.flyTo(item.coords, item.zoom, { duration: 1.2 });
+}
+
+// Reset Map View
+function resetMapView() {
+  if (!map) return;
+  if (boundaryLayer) {
+    map.fitBounds(boundaryLayer.getBounds(), { padding: [25, 25], animate: true });
+  } else {
+    map.setView([-7.4245, 109.3365], 15.5);
+  }
+  const sel = document.getElementById("select-landmark");
+  if (sel) sel.value = "center";
+}
 </script>
 {% endblock %}
