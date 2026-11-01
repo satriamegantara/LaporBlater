@@ -5,6 +5,7 @@ __pycache__/
 *.pyo
 .pytest_cache/
 .env
+*.db
 
 # Uploads & User data (retain structure)
 uploads/photos/original/*

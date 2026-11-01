@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}LaporBlater - WebGIS Pengaduan Fasilitas Umum Desa Blater{% endblock %}</title>
-  <meta name="description" content="Sistem Informasi Geografis Pengaduan Kerusakan Fasilitas Umum di Desa Blater Berbasis WebGIS. Dilengkapi validasi lokasi spasial dan klasifikasi AI.">
+  <title>{% block title %}LaporBlater - WebGIS Pengaduan Desa Blater{% endblock %}</title>
+  <meta name="description" content="Sistem Informasi Geografis Pengaduan Kerusakan Fasilitas Umum di Desa Blater.">
   
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,32 +23,55 @@
   {% block extra_head %}{% endblock %}
 </head>
 <body>
-  <!-- Header / Navbar -->
+  <!-- Clean Minimalist Header / Navbar -->
   <header class="navbar">
-    <a href="/" class="brand">
-      <div class="brand-icon">
-        <i class="fa-solid fa-map-location-dot"></i>
-      </div>
-      <div>
-        <div class="brand-title">LaporBlater</div>
-        <div class="brand-subtitle">WebGIS Pengaduan Desa Blater</div>
-      </div>
+    <a href="/" class="brand" aria-label="LaporBlater">
+      <div class="brand-title">Lapor<span>Blater</span></div>
+      <span style="display: none;">LaporBlater</span>
+      <div class="brand-subtitle">Desa Blater</div>
     </a>
     
     <nav>
+      <!-- Desktop Links -->
       <ul class="nav-links">
-        <li><a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}"><i class="fa-solid fa-map"></i> Peta Publik</a></li>
-        <li><a href="/lapor" class="nav-link {% if request.path == '/lapor' %}active{% endif %}"><i class="fa-solid fa-circle-plus"></i> Buat Laporan</a></li>
-        <li><a href="/cek-status" class="nav-link {% if 'cek-status' in request.path or '/laporan/' in request.path and 'dashboard' not in request.path %}active{% endif %}"><i class="fa-solid fa-magnifying-glass"></i> Cek Status</a></li>
-        
+        <li><a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Beranda</a></li>
+        <li><a href="/lapor" class="nav-link {% if request.path == '/lapor' %}active{% endif %}">Lapor Kerusakan</a></li>
+        <li><a href="/cek-status" class="nav-link {% if 'cek-status' in request.path or ('/laporan/' in request.path and 'dashboard' not in request.path) %}active{% endif %}">Cek Status</a></li>
+        <li><a href="/panduan" class="nav-link {% if request.path == '/panduan' %}active{% endif %}">Panduan</a></li>
+        <li><a href="javascript:void(0)" onclick="openModal('modalProfilDesa')" class="nav-link">Profil Desa</a></li>
+
         {% if session.get('user_id') %}
-          <li><a href="/dashboard" class="nav-link {% if 'dashboard' in request.path %}active{% endif %}"><i class="fa-solid fa-chart-pie"></i> Dasbor Pengelola</a></li>
-          <li><a href="/logout" onclick="localStorage.removeItem('laporblater_token');" class="btn btn-secondary btn-sm"><i class="fa-solid fa-right-from-bracket"></i> Keluar</a></li>
+          <li><a href="/dashboard" class="nav-link {% if 'dashboard' in request.path %}active{% endif %}">Dasbor Petugas</a></li>
+          <li><a href="/logout" onclick="localStorage.removeItem('laporblater_token');" class="btn btn-secondary btn-sm">Keluar</a></li>
         {% else %}
-          <li><a href="/login" class="btn btn-secondary btn-sm"><i class="fa-solid fa-user-shield"></i> Login Petugas</a></li>
+          <li><a href="/login" class="nav-link"><i class="fa-solid fa-lock" style="font-size: 0.8rem; margin-right: 0.2rem;"></i> Petugas</a></li>
         {% endif %}
       </ul>
+
+      <!-- Mobile Hamburger Toggle -->
+      <button class="mobile-nav-toggle" id="btn-mobile-toggle" aria-label="Menu Navigasi" onclick="toggleMobileNav()">
+        <i class="fa-solid fa-bars" id="mobile-toggle-icon"></i>
+      </button>
     </nav>
+
+    <!-- Mobile Drawer Dropdown -->
+    <div class="mobile-nav-drawer" id="mobile-drawer">
+      <ul class="mobile-nav-list">
+        <li><a href="/" class="mobile-nav-link {% if request.path == '/' %}active{% endif %}">Beranda</a></li>
+        <li><a href="/lapor" class="mobile-nav-link {% if request.path == '/lapor' %}active{% endif %}">Lapor Kerusakan</a></li>
+        <li><a href="/cek-status" class="mobile-nav-link {% if 'cek-status' in request.path %}active{% endif %}">Cek Status Laporan</a></li>
+        <li><a href="/panduan" class="mobile-nav-link {% if request.path == '/panduan' %}active{% endif %}">Panduan Penggunaan</a></li>
+        <li><a href="javascript:void(0)" onclick="openModal('modalProfilDesa'); toggleMobileNav();" class="mobile-nav-link">Profil Desa Blater</a></li>
+        <li style="border-top: 1px solid #e5e7eb; padding-top: 0.5rem; margin-top: 0.25rem;">
+          {% if session.get('user_id') %}
+            <a href="/dashboard" class="mobile-nav-link">Dasbor Petugas</a>
+            <a href="/logout" onclick="localStorage.removeItem('laporblater_token');" class="mobile-nav-link" style="color: #ef4444;">Keluar</a>
+          {% else %}
+            <a href="/login" class="mobile-nav-link">Login Petugas Desa</a>
+          {% endif %}
+        </li>
+      </ul>
+    </div>
   </header>
 
   <!-- Main Content -->
@@ -56,12 +79,140 @@
     {% block content %}{% endblock %}
   </main>
 
+  <!-- Clean Minimalist Footer (White & Grey) -->
+  {% block footer %}
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-grid-clean">
+        <!-- Kolom 1: Profil Ringkas -->
+        <div>
+          <div class="brand-title" style="margin-bottom: 0.6rem;">Lapor<span>Blater</span></div>
+          <p style="font-size: 0.875rem; color: #4b5563; line-height: 1.6; max-width: 360px;">
+            Sistem Informasi Geografis pemantauan dan pengaduan kerusakan fasilitas publik (jalan, PJU, dan saluran drainase) di wilayah Desa Blater, Kalimanah, Purbalingga.
+          </p>
+        </div>
+
+        <!-- Kolom 2: Navigasi Cepat -->
+        <div>
+          <h4 class="footer-title">Menu Cepat</h4>
+          <ul class="footer-links-list">
+            <li class="footer-link-item"><a href="/">Beranda & Peta</a></li>
+            <li class="footer-link-item"><a href="/lapor">Buat Laporan Baru</a></li>
+            <li class="footer-link-item"><a href="/cek-status">Cek Status Laporan</a></li>
+            <li class="footer-link-item"><a href="/panduan">Panduan Penggunaan</a></li>
+            <li class="footer-link-item"><a href="javascript:void(0)" onclick="openModal('modalProfilDesa')">Profil Balai Desa</a></li>
+          </ul>
+        </div>
+
+        <!-- Kolom 3: Kontak Desa -->
+        <div>
+          <h4 class="footer-title">Kontak & Pelayanan</h4>
+          <div style="font-size: 0.875rem; color: #4b5563; display: flex; flex-direction: column; gap: 0.5rem;">
+            <div>Jl. Raya Blater, Kec. Kalimanah, Kab. Purbalingga, Jawa Tengah 53371</div>
+            <div>Telepon: (0281) 893321</div>
+            <div>Jam Pelayanan: Senin - Jumat (08.00 - 15.30 WIB)</div>
+            <div style="margin-top: 0.4rem;">
+              <a href="https://wa.me/6281228001122?text=Halo%20Admin%20Desa%20Blater" target="_blank" style="display: inline-flex; align-items: center; gap: 0.4rem; color: #16a34a; font-weight: 600; text-decoration: none;">
+                <i class="fa-brands fa-whatsapp"></i> WhatsApp Warga Blater
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Bar -->
+      <div class="footer-bottom-clean">
+        <div>
+          &copy; 2026 <strong>Pemerintah Desa Blater</strong>. Sistem Informasi Geografis Terpadu.
+        </div>
+        <div style="display: flex; gap: 1rem;">
+          <a href="/panduan" style="color: #6b7280; text-decoration: none;">Panduan</a>
+          <a href="javascript:void(0)" onclick="openModal('modalProfilDesa')" style="color: #6b7280; text-decoration: none;">Tentang Blater</a>
+          <a href="/login" style="color: #6b7280; text-decoration: none;">Login Petugas</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+  {% endblock %}
+
+  <!-- Single Minimalist Floating Button (Matches Reference Image 1) -->
+  <button type="button" class="floating-action-btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" title="Kembali ke Atas">
+    <i class="fa-solid fa-arrow-up"></i>
+  </button>
+
+  <!-- Reusable Modal: Profil Desa Blater (Minimalist White & Grey) -->
+  <div class="custom-modal-backdrop" id="modalProfilDesa" onclick="closeModalOnBackdrop(event, 'modalProfilDesa')">
+    <div class="custom-modal-card">
+      <div class="custom-modal-header">
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: #111827; margin: 0;">Profil Desa Blater</h3>
+        <button type="button" onclick="closeModal('modalProfilDesa')" style="background:none; border:none; font-size: 1.25rem; color: #6b7280; cursor:pointer;">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="custom-modal-body">
+        <img src="{{ url_for('static', filename='images/kantor_desa_blater.jpg') }}" alt="Kantor Kepala Desa Blater" style="width: 100%; height: 200px; object-fit: cover; border-radius: 12px; margin-bottom: 1rem; border: 1px solid #e5e7eb;">
+        
+        <h4 style="font-weight: 700; font-size: 1.05rem; margin-bottom: 0.35rem; color: #111827;">
+          Kantor Kepala Desa Blater
+        </h4>
+        <p style="font-size: 0.875rem; color: #4b5563; margin-bottom: 1rem; line-height: 1.6;">
+          Desa Blater terletak di Kecamatan Kalimanah, Kabupaten Purbalingga, Jawa Tengah. Wilayah ini mencakup pemukiman warga, persawahan, serta area pendidikan tinggi (Kampus Fakultas Teknik Unsoed).
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+          <div style="background: #f3f4f6; padding: 0.75rem; border-radius: 8px;">
+            <div style="font-size: 0.75rem; color: #6b7280;">Kecamatan / Kabupaten</div>
+            <div style="font-weight: 600; font-size: 0.85rem; color: #111827;">Kalimanah, Purbalingga</div>
+          </div>
+          <div style="background: #f3f4f6; padding: 0.75rem; border-radius: 8px;">
+            <div style="font-size: 0.75rem; color: #6b7280;">Wilayah Dusun</div>
+            <div style="font-weight: 600; font-size: 0.85rem; color: #111827;">3 Dusun • 6 RW</div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('modalProfilDesa')">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   
   <!-- Main JS -->
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
   
+  <script>
+    function toggleMobileNav() {
+      const drawer = document.getElementById("mobile-drawer");
+      const icon = document.getElementById("mobile-toggle-icon");
+      if (drawer.classList.contains("open")) {
+        drawer.classList.remove("open");
+        icon.className = "fa-solid fa-bars";
+      } else {
+        drawer.classList.add("open");
+        icon.className = "fa-solid fa-xmark";
+      }
+    }
+
+    function openModal(id) {
+      const m = document.getElementById(id);
+      if (m) m.classList.add("show");
+    }
+
+    function closeModal(id) {
+      const m = document.getElementById(id);
+      if (m) m.classList.remove("show");
+    }
+
+    function closeModalOnBackdrop(e, id) {
+      if (e.target.id === id) {
+        closeModal(id);
+      }
+    }
+  </script>
+
   {% block extra_scripts %}{% endblock %}
 </body>
 </html>

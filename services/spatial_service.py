@@ -178,8 +178,19 @@ def compute_kde(reports, bandwidth_meters=100.0, grid_resolution=30):
     xx, yy = np.meshgrid(x_grid, y_grid)
     grid_coords = np.vstack([xx.ravel(), yy.ravel()])
     
-    # Fit gaussian KDE
-    kde = stats.gaussian_kde(coords_utm.T, bw_method=bandwidth_meters / np.std(coords_utm))
+    # Fit gaussian KDE with singular covariance protection
+    coords_for_kde = coords_utm.T.copy()
+    if coords_for_kde.shape[1] > 1:
+        std_devs = np.std(coords_for_kde, axis=1)
+        if np.any(std_devs < 1e-4):
+            coords_for_kde = coords_for_kde + np.random.normal(0, 0.5, coords_for_kde.shape)
+    try:
+        std_all = float(np.std(coords_utm))
+        bw = (bandwidth_meters / std_all) if std_all > 1e-4 else "scott"
+        kde = stats.gaussian_kde(coords_for_kde, bw_method=bw)
+    except Exception:
+        jitter = np.random.normal(0, 1.0, coords_for_kde.shape)
+        kde = stats.gaussian_kde(coords_for_kde + jitter, bw_method="scott")
     density = kde(grid_coords).reshape(xx.shape)
     
     max_val = np.max(density)

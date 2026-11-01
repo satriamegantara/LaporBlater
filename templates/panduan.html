@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Panduan Penggunaan - LaporBlater Desa Blater{% endblock %}
+
+{% block content %}
+<section style="padding: 4rem 2rem 3rem; background: #ffffff;">
+  <div style="max-width: 1100px; margin: 0 auto;">
+    <span class="section-tag">Panduan Warga</span>
+    <h1 class="section-title">Alur Pengaduan Fasilitas Publik</h1>
+    <p class="section-subtitle">
+      Proses pelaporan fasilitas umum di Desa Blater dirancang sederhana dan cepat dalam 4 langkah.
+    </p>
+
+    <!-- 4 Clean Light Grey Cards (Matching Reference Style) -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-top: 2.5rem;">
+      <div class="card-grey">
+        <div style="width: 36px; height: 36px; border-radius: 8px; background: #ffffff; color: #111827; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; border: 1px solid #e5e7eb;">
+          1
+        </div>
+        <h3 class="card-grey-title">Foto Kerusakan</h3>
+        <p class="card-grey-desc">
+          Ambil foto jalan atau lampu yang rusak langsung menggunakan kamera HP atau unggah dari galeri Anda.
+        </p>
+      </div>
+
+      <div class="card-grey">
+        <div style="width: 36px; height: 36px; border-radius: 8px; background: #ffffff; color: #111827; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; border: 1px solid #e5e7eb;">
+          2
+        </div>
+        <h3 class="card-grey-title">Tentukan Lokasi di Peta</h3>
+        <p class="card-grey-desc">
+          Pilih titik lokasi pada peta. Peta terkunci khusus di dalam wilayah administratif Desa Blater agar tidak meleset.
+        </p>
+      </div>
+
+      <div class="card-grey">
+        <div style="width: 36px; height: 36px; border-radius: 8px; background: #ffffff; color: #111827; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; border: 1px solid #e5e7eb;">
+          3
+        </div>
+        <h3 class="card-grey-title">Pilih Jenis & Keterangan</h3>
+        <p class="card-grey-desc">
+          Pilih kategori (Jalan, PJU, atau Drainase) dan tulis keterangan singkat patokan tempat yang mudah dicari petugas.
+        </p>
+      </div>
+
+      <div class="card-grey">
+        <div style="width: 36px; height: 36px; border-radius: 8px; background: #ffffff; color: #111827; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; border: 1px solid #e5e7eb;">
+          4
+        </div>
+        <h3 class="card-grey-title">Dapatkan Kode Tiket</h3>
+        <p class="card-grey-desc">
+          Simpan Kode Tiket unik Anda untuk mengecek perkembangan verifikasi dan pengerjaan perbaikan kapan saja.
+        </p>
+      </div>
+    </div>
+
+    <!-- CTA Button -->
+    <div style="margin-top: 2.5rem; display: flex; gap: 0.75rem;">
+      <a href="/lapor" class="btn btn-primary" style="padding: 0.75rem 1.5rem;">
+        <i class="fa-solid fa-camera"></i> Mulai Buat Laporan
+      </a>
+      <a href="/cek-status" class="btn btn-secondary" style="padding: 0.75rem 1.5rem;">
+        <i class="fa-solid fa-magnifying-glass"></i> Cek Status Tiket
+      </a>
+    </div>
+
+    <!-- Clean FAQ Section -->
+    <div style="margin-top: 4rem;">
+      <span class="section-tag">FAQ</span>
+      <h2 style="font-size: 1.5rem; font-weight: 800; color: #111827; margin-bottom: 1.25rem;">
+        Pertanyaan yang Sering Diajukan
+      </h2>
+
+      <div class="faq-item-clean active">
+        <div class="faq-question-clean" onclick="toggleFaqClean(this)">
+          <span>Apakah warga harus membuat akun untuk melapor?</span>
+          <i class="fa-solid fa-chevron-down" style="font-size: 0.8rem;"></i>
+        </div>
+        <div class="faq-answer-clean">
+          Tidak perlu. Warga masyarakat dapat langsung melapor tanpa mendaftar akun. Anda hanya perlu menyimpan Kode Tiket yang muncul setelah mengirim laporan.
+        </div>
+      </div>
+
+      <div class="faq-item-clean">
+        <div class="faq-question-clean" onclick="toggleFaqClean(this)">
+          <span>Mengapa peta tidak bisa digeser keluar dari Desa Blater?</span>
+          <i class="fa-solid fa-chevron-down" style="font-size: 0.8rem;"></i>
+        </div>
+        <div class="faq-answer-clean">
+          Sistem ini dikhususkan untuk fasilitas umum di bawah kewenangan Pemerintah Desa Blater. Peta dikunci otomatis agar seluruh laporan berada tepat di dalam wilayah desa.
+        </div>
+      </div>
+
+      <div class="faq-item-clean">
+        <div class="faq-question-clean" onclick="toggleFaqClean(this)">
+          <span>Berapa lama laporan ditindaklanjuti?</span>
+          <i class="fa-solid fa-chevron-down" style="font-size: 0.8rem;"></i>
+        </div>
+        <div class="faq-answer-clean">
+          Laporan diverifikasi oleh perangkat desa maksimal dalam 1x24 jam kerja. Penjadwalan pengerjaan fisik disesuaikan dengan tingkat keparahan dan ketersediaan material perbaikan.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function toggleFaqClean(el) {
+  const item = el.closest(".faq-item-clean");
+  if (item.classList.contains("active")) {
+    item.classList.remove("active");
+  } else {
+    document.querySelectorAll(".faq-item-clean").forEach(i => i.classList.remove("active"));
+    item.classList.add("active");
+  }
+}
+</script>
+{% endblock %}

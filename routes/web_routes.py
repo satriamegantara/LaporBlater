@@ -27,6 +27,12 @@ def cek_status():
     return render_template("status.html", report_id=None)
 
 
+@web_bp.route("/panduan")
+def panduan_page():
+    """Public interactive user guide for reporting damage."""
+    return render_template("panduan.html")
+
+
 @web_bp.route("/login")
 def login_page():
     """Login page for officers and admin."""

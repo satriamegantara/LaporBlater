@@ -4,9 +4,14 @@
 
 {% block content %}
 <div class="form-container">
-  <div style="text-align: center; margin-bottom: 2rem;">
-    <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--secondary);">Lapor Kerusakan Fasilitas Umum</h1>
-    <p style="color: var(--text-muted); font-size: 0.95rem;">Laporkan kerusakan jalan, penerangan (PJU), atau drainase di Desa Blater</p>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+    <div>
+      <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--secondary); margin-bottom: 0.25rem;">Lapor Kerusakan Fasilitas Umum</h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">Laporkan kerusakan jalan, penerangan (PJU), atau drainase di Desa Blater</p>
+    </div>
+    <a href="/panduan" target="_blank" class="btn btn-secondary btn-sm" style="box-shadow: var(--shadow-sm);">
+      <i class="fa-solid fa-book-open-reader"></i> Buka Panduan Lengkap
+    </a>
   </div>
 
   <!-- Stepper Indicator -->
@@ -80,15 +85,39 @@
         Geser penanda di peta atau gunakan tombol GPS perangkat. Lokasi harus berada di dalam batas administratif Desa Blater.
       </p>
 
-      <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
-        <button type="button" class="btn btn-secondary btn-sm" id="btn-geolocate" onclick="useDeviceGPS()">
-          <i class="fa-solid fa-crosshairs"></i> Gunakan GPS Perangkat Saya
-        </button>
-        <span id="location-source-badge" class="badge badge-menunggu" style="align-self: center;">Sumber: Titik Manual</span>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-geolocate" onclick="useDeviceGPS()">
+            <i class="fa-solid fa-crosshairs"></i> Gunakan GPS Perangkat Saya
+          </button>
+          <span id="location-source-badge" class="badge badge-menunggu" style="align-self: center;">Sumber: Titik Manual</span>
+        </div>
+
+        <!-- Basemap toggle and reset for picker -->
+        <div style="display: flex; gap: 0.4rem; align-items: center;">
+          <div class="map-quick-toolbar" style="padding: 0.2rem 0.4rem;">
+            <button type="button" id="btn-picker-street" class="active" onclick="switchPickerBasemap('street')" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">
+              <i class="fa-solid fa-road"></i> Jalan
+            </button>
+            <button type="button" id="btn-picker-sat" onclick="switchPickerBasemap('sat')" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">
+              <i class="fa-solid fa-satellite"></i> Satelit
+            </button>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="recenterPickerMap()" title="Pusatkan kembali ke Desa Blater" style="padding: 0.3rem 0.6rem;">
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </button>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-muted);">
+        <span><i class="fa-solid fa-hand-pointer"></i> Klik pada peta atau geser penanda merah untuk menentukan titik.</span>
+        <span style="display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 600; color: #0284c7;">
+          <i class="fa-solid fa-lock"></i> Peta Terkunci di Wilayah Blater
+        </span>
       </div>
 
       <!-- Mini Map for Picking -->
-      <div style="height: 320px; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-color); margin-bottom: 1rem;">
+      <div style="height: 340px; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-color); margin-bottom: 1rem; position: relative;">
         <div id="picker-map" style="width: 100%; height: 100%;"></div>
       </div>
 
@@ -436,13 +465,31 @@ function uploadPhotoFile(file) {
 }
 
 // 2. Leaflet Location Picker Map
-function initPickerMap() {
-  pickerMap = L.map("picker-map").setView([selectedLat, selectedLng], 15);
+let blaterPickerBounds = null;
+let pickerStreetLayer = null;
+let pickerSatLayer = null;
 
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+function initPickerMap() {
+  const southWest = L.latLng(-7.4365, 109.3200);
+  const northEast = L.latLng(-7.4135, 109.3600);
+  blaterPickerBounds = L.latLngBounds(southWest, northEast);
+
+  pickerMap = L.map("picker-map", {
+    maxBounds: blaterPickerBounds,
+    maxBoundsViscosity: 1.0, // Hard limit: Cannot drag outside Desa Blater!
+    minZoom: 14,
+    maxZoom: 19
+  }).setView([selectedLat, selectedLng], 15.5);
+
+  pickerStreetLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
-    attribution: '&copy; OpenStreetMap'
+    attribution: '&copy; OpenStreetMap | Desa Blater'
   }).addTo(pickerMap);
+
+  pickerSatLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+    maxZoom: 19,
+    attribution: 'Tiles &copy; Esri &mdash; Citra Satelit'
+  });
 
   // Load Boundary
   fetch("/api/map/boundary")
@@ -451,13 +498,21 @@ function initPickerMap() {
       boundaryPolygonGeoJSON = L.geoJSON(data, {
         style: {
           color: "#059669",
-          weight: 3,
+          weight: 3.5,
           dashArray: "5, 5",
           fillColor: "#10b981",
           fillOpacity: 0.1
         }
       }).addTo(pickerMap);
+
+      const tightBounds = boundaryPolygonGeoJSON.getBounds().pad(0.05);
+      blaterPickerBounds = tightBounds;
+      pickerMap.setMaxBounds(tightBounds);
+      pickerMap.options.maxBoundsViscosity = 1.0;
       
+      const fitZoom = pickerMap.getBoundsZoom(tightBounds);
+      pickerMap.setMinZoom(fitZoom >= 13 ? fitZoom : 14);
+
       // Set initial point from representative center
       validatePoint(selectedLat, selectedLng);
     });
@@ -469,6 +524,9 @@ function initPickerMap() {
 
   pickerMarker.on("dragend", function(e) {
     const pos = e.target.getLatLng();
+    if (blaterPickerBounds && !blaterPickerBounds.contains(pos)) {
+      showToast("Lokasi penanda di luar Desa Blater! Silakan geser ke dalam area desa.", "warning");
+    }
     selectedLat = pos.lat;
     selectedLng = pos.lng;
     locationSource = "manual_map";
@@ -485,6 +543,33 @@ function initPickerMap() {
     document.getElementById("location-source-badge").innerText = "Sumber: Titik Manual";
     updateMarkerPosition(selectedLat, selectedLng);
   });
+}
+
+function switchPickerBasemap(type) {
+  if (!pickerMap) return;
+  const btnStreet = document.getElementById("btn-picker-street");
+  const btnSat = document.getElementById("btn-picker-sat");
+
+  if (type === "sat") {
+    pickerMap.removeLayer(pickerStreetLayer);
+    pickerSatLayer.addTo(pickerMap);
+    btnStreet.classList.remove("active");
+    btnSat.classList.add("active");
+  } else {
+    pickerMap.removeLayer(pickerSatLayer);
+    pickerStreetLayer.addTo(pickerMap);
+    btnSat.classList.remove("active");
+    btnStreet.classList.add("active");
+  }
+}
+
+function recenterPickerMap() {
+  if (!pickerMap) return;
+  if (boundaryPolygonGeoJSON) {
+    pickerMap.fitBounds(boundaryPolygonGeoJSON.getBounds(), { padding: [20, 20] });
+  } else {
+    pickerMap.setView([-7.4245, 109.3365], 15.5);
+  }
 }
 
 function updateMarkerPosition(lat, lng) {
